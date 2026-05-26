@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Chuyên Sâu - Lập Trình C Automotive & AUTOSAR (Middle V2)</title>
+    <meta name="description" content="Tài liệu phân tích chuyên sâu và chi tiết về lập trình C nhúng ô tô, tiêu chuẩn MISRA C và kiến trúc AUTOSAR cho kỹ sư cấp độ Middle.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Modern CSS Reset & Variables */
+        :root {
+            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, monospace;
+            
+            /* Dark Theme Colors (Default) */
+            --bg-primary: #0b0f19;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --card-bg: #111c30;
+            --card-border: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #6366f1;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --code-bg: #0d1117;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --header-blur: rgba(11, 15, 25, 0.8);
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] {
+            /* Light Theme Colors */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #e2e8f0;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --accent-primary: #0284c7;
+            --accent-secondary: #4f46e5;
+            --accent-glow: rgba(2, 132, 199, 0.1);
+            --code-bg: #1e293b;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --header-blur: rgba(248, 250, 252, 0.8);
+            --shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--card-border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        /* Header Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background-color: var(--header-blur);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, var(--text-primary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .badge {
+            background: var(--accent-glow);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Layout Grid */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Sidebar Navigation */
+        aside {
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--card-border);
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 10px 15px 10px 35px;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            fill: var(--text-muted);
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--accent-primary);
+            background-color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .nav-link.active {
+            border-left: 3px solid var(--accent-primary);
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        /* Main Content Area */
+        main {
+            padding: 40px 60px 80px;
+            max-width: 1000px;
+            justify-self: center;
+            width: 100%;
+        }
+
+        /* Hero Banner */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, var(--card-bg), var(--bg-secondary));
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        [data-theme="light"] .hero h1 {
+            background: linear-gradient(to right, #0f172a, var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            max-width: 700px;
+        }
+
+        /* Content Sections */
+        section {
+            margin-bottom: 60px;
+            scroll-margin-top: 100px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+        }
+
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 25px 0 15px;
+            color: var(--accent-primary);
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        /* Custom Cards */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 15px 30px -10px var(--accent-glow);
+        }
+
+        /* Callout blocks (Alerts) */
+        .callout {
+            border-left: 4px solid;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            background-color: var(--bg-secondary);
+        }
+
+        .callout.danger {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .callout.warning {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .callout.success {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .callout-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .callout.danger .callout-title { color: var(--danger); }
+        .callout.warning .callout-title { color: var(--warning); }
+        .callout.success .callout-title { color: var(--success); }
+
+        /* Code Blocks */
+        .code-container {
+            position: relative;
+            background-color: var(--code-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .code-lang {
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: var(--transition);
+        }
+
+        .copy-btn:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-primary);
+        }
+
+        pre {
+            padding: 16px;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 13.5px;
+            color: #e2e8f0;
+        }
+
+        [data-theme="light"] code {
+            color: #38414f;
+        }
+
+        /* Syntax colors (basic inline styling placeholder simulation) */
+        .token-keyword { color: #f97316; font-weight: 600; }
+        .token-type { color: #38bdf8; }
+        .token-comment { color: #64748b; font-style: italic; }
+        .token-number { color: #fbbf24; }
+        .token-string { color: #34d399; }
+        .token-function { color: #818cf8; }
+
+        /* Tables styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 14px;
+            box-shadow: var(--shadow);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            background-color: var(--card-bg);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Visualization Aids (Struct Padding Diagram) */
+        .struct-layout {
+            display: flex;
+            gap: 4px;
+            margin: 15px 0;
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .memory-byte {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .byte-data { background-color: var(--accent-secondary); }
+        .byte-pad { background-color: var(--danger); opacity: 0.6; }
+        .byte-label { font-size: 8px; margin-top: 2px; opacity: 0.8; }
+
+        /* Footer */
+        footer {
+            margin-top: 80px;
+            padding-top: 30px;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            aside {
+                display: none; /* Hide sidebar on tablet/mobile for simplicity */
+            }
+            header {
+                padding: 0 20px;
+            }
+            main {
+                padding: 30px 20px;
+            }
+        }
+
+        /* --- INTERACTIVE SIMULATORS STYLING --- */
+        .sim-container {
+            background-color: var(--bg-secondary);
+            border: 1px dashed var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
+        }
+        [data-theme="light"] .sim-container {
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .sim-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sim-title svg {
+            color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+        .sim-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-sim {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #ffffff !important;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+        .btn-sim:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+        .btn-sim.secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary) !important;
+        }
+        .btn-sim.secondary:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+        .sim-playground {
+            min-height: 100px;
+            background-color: var(--code-bg);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--card-border);
+            position: relative;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        /* 1. Struct Alignment Designer */
+        .struct-designer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .struct-designer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .field-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            font-size: 13px;
+        }
+        .field-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .field-type {
+            font-family: var(--font-mono);
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        .field-name {
+            color: var(--text-secondary);
+        }
+        .btn-remove-field {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 0 4px;
+            transition: var(--transition);
+        }
+        .btn-remove-field:hover {
+            transform: scale(1.2);
+        }
+        .struct-result-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .struct-stats {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+        .stat-badge {
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            padding: 6px 8px;
+            border-radius: 6px;
+            flex: 1;
+            text-align: center;
+        }
+        .stat-badge span {
+            display: block;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--accent-primary);
+        }
+        .stat-badge.wasted span {
+            color: var(--warning);
+        }
+        
+        /* 2. Memory Pool vs Heap Allocator */
+        .mem-blocks-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 8px;
+            min-height: 80px;
+            border: 1px solid var(--card-border);
+        }
+        .mem-block {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            min-width: 40px;
+        }
+        .mem-block.free {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            border: 1px dashed var(--card-border);
+        }
+        .mem-block.allocated {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: 1px solid var(--accent-primary);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .mem-block.frag {
+            background: var(--danger);
+            border: 1px solid var(--danger);
+            opacity: 0.6;
+        }
+        .mem-block-label {
+            font-size: 8px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        .mem-status-text {
+            font-size: 13px;
+            margin-top: 8px;
+            color: var(--text-secondary);
+        }
+
+        /* 3. Volatile Optimizer Simulation */
+        .volatile-console {
+            background-color: #050811;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            padding: 12px;
+            height: 140px;
+            overflow-y: auto;
+            color: #38bdf8;
+            border: 1px solid var(--card-border);
+            margin-top: 10px;
+        }
+        .volatile-cpu-state {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .cpu-register {
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+        .register-val {
+            font-weight: 700;
+            color: var(--success);
+        }
+        .register-val.stale {
+            color: var(--warning);
+        }
+
+        /* 4. Const Pointer Mutability Playground */
+        .const-code-line {
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
+        }
+        .const-code-line:hover {
+            background: var(--bg-primary);
+            border-color: var(--card-border);
+        }
+        .const-code-line.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: #f87171;
+        }
+        [data-theme="light"] .const-code-line.error {
+            background: rgba(239, 68, 68, 0.05);
+            color: var(--danger);
+        }
+        .const-code-line.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: #34d399;
+        }
+        [data-theme="light"] .const-code-line.success {
+            background: rgba(16, 185, 129, 0.05);
+            color: var(--success);
+        }
+        .const-feedback {
+            font-size: 13px;
+            margin-top: 10px;
+            color: var(--text-secondary);
+            min-height: 24px;
+            padding: 6px 12px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+        }
+
+        /* 5. Zero-Copy VS Memcpy Pipeline */
+        .pipeline-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        @media (max-width: 600px) {
+            .pipeline-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .pipeline-column {
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .pipeline-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--accent-primary);
+        }
+        .pipeline-track {
+            height: 80px;
+            position: relative;
+            background: var(--code-bg);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+        .pipeline-packet {
+            width: 50px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: 1px solid var(--accent-primary);
+            border-radius: 4px;
+            position: absolute;
+            top: 25px;
+            left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            font-family: var(--font-mono);
+            transition: left 0.1s linear, top 0.1s linear, background-color 0.3s;
+        }
+        .pipeline-stats {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 6. Register Controller */
+        .register-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 480px) {
+            .register-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .bit-cell {
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            padding: 8px 4px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+        }
+        .bit-cell:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+        .bit-cell.active {
+            background: var(--accent-glow);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .bit-val {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .bit-cell.active .bit-val {
+            color: var(--accent-primary);
+        }
+        .bit-index {
+            font-size: 9px;
+            color: var(--text-muted);
+            display: block;
+        }
+        .register-outputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            background: var(--bg-primary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+        }
+        .output-label {
+            color: var(--text-muted);
+        }
+        .output-value {
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+
+        /* 7. Side Effects Tracer */
+        .effects-visualizer {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .effects-vars {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        .effect-var-box {
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            flex: 1;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+        .effect-var-box span {
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+        .effects-trace-step {
+            background: var(--code-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        .effects-trace-step.active {
+            border-color: var(--warning);
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+
+        /* 8. Concurrency Scheduler */
+        .scheduler-timeline {
+            background: var(--code-bg);
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            padding: 15px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+        .thread-row {
+            display: flex;
+            align-items: center;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+        .thread-label {
+            width: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+        .thread-bar-container {
+            flex: 1;
+            height: 22px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            min-width: 300px;
+        }
+        .thread-segment {
+            height: 100%;
+            position: absolute;
+            background: var(--accent-secondary);
+            border-right: 1px solid var(--card-border);
+            transition: width 0.2s, left 0.2s;
+        }
+        .thread-segment.running {
+            background: var(--success);
+        }
+        .thread-segment.preempted {
+            background: var(--danger);
+        }
+        .thread-segment.waiting {
+            background: var(--bg-tertiary);
+            opacity: 0.6;
+        }
+        .shared-var-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            padding: 8px 15px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+        .shared-var-val {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+        .shared-var-val.error-val {
+            color: var(--danger);
+            animation: pulseGlow 1s infinite;
+        }
+
+        /* --- C MEMORY SEGMENTS STYLING --- */
+        .memory-segments-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        @media (max-width: 768px) {
+            .memory-segments-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .code-interactive-playground {
+            background-color: var(--code-bg);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--card-border);
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            line-height: 1.8;
+            color: #e2e8f0;
+        }
+        [data-theme="light"] .code-interactive-playground {
+            color: #334155;
+        }
+        .interactive-token {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--card-border);
+            padding: 1px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--accent-primary) !important;
+        }
+        .interactive-token:hover, .interactive-token.active {
+            border-color: var(--accent-primary);
+            background-color: var(--accent-glow);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .segments-visual-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+        }
+        .segment-block {
+            padding: 8px 12px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: var(--font-sans);
+            font-weight: 700;
+            transition: var(--transition);
+            border: 1px solid var(--card-border);
+            color: #ffffff !important;
+            opacity: 0.75;
+            user-select: none;
+        }
+        .segment-block.flash {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            border-color: #2563eb;
+        }
+        .segment-block.ram {
+            background: linear-gradient(135deg, #065f46, #10b981);
+            border-color: #059669;
+        }
+        .segment-block.stack-heap {
+            background: linear-gradient(135deg, #78350f, #d97706);
+            border-color: #b45309;
+        }
+        .segment-block.active {
+            filter: brightness(1.2);
+            box-shadow: 0 0 15px currentColor;
+            transform: scale(1.02);
+            border-color: #ffffff;
+            opacity: 1;
+        }
+        .segment-desc-box {
+            margin-top: 15px;
+            background: var(--bg-primary);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            min-height: 85px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .segment-desc-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">C</div>
+            <div class="logo-text">Automotive & AUTOSAR</div>
+        </div>
+        <div class="header-actions">
+            <span class="badge">Middle Engineer V2</span>
+            <button class="theme-toggle" id="theme-toggle-btn" aria-label="Toggle light/dark theme">
+                <!-- Moon Icon -->
+                <svg id="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <!-- Sun Icon (Hidden by default) -->
+                <svg id="sun-icon" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside>
+            <div class="search-box">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input type="text" id="search-input" placeholder="Tìm kiếm nhanh...">
+            </div>
+            
+            <p class="nav-title">Nội dung chi tiết</p>
+            <nav>
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="#memory-hardware" class="nav-link active">1. Bộ Nhớ & Phần Cứng</a></li>
+                    <li class="nav-item"><a href="#advanced-pointers" class="nav-link">2. Con Trỏ Nâng Cao</a></li>
+                    <li class="nav-item"><a href="#bitwise-typing" class="nav-link">3. Thao Tác Bit & Kiểu Dữ Liệu</a></li>
+                    <li class="nav-item"><a href="#misra-defensive" class="nav-link">4. MISRA C & Lập Trình Phòng Thủ</a></li>
+                    <li class="nav-item"><a href="#concurrency" class="nav-link">5. Tái Nhập & Đồng Bộ Hóa</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Hero banner -->
+            <div class="hero">
+                <h1>Phân Tích Chuyên Sâu & Chi Tiết</h1>
+                <p>Tài liệu mở rộng dựa trên <strong>Cẩm nang ôn tập C Automotive Middle (V2)</strong>. Cung cấp góc nhìn phân tích sâu về lập trình hệ thống ô tô, tiêu chuẩn MISRA C và kiến trúc AUTOSAR phục vụ đánh giá năng lực lập trình nâng cao.</p>
+            </div>
+
+            <!-- SECTION 1 -->
+            <section id="memory-hardware">
+                <h2>1. Quản lý bộ nhớ & Phần cứng (Memory & Hardware)</h2>
+                
+                <div class="card">
+                    <h3>Phân vùng bộ nhớ C (Memory Layout & Segments)</h3>
+                    <p>Bộ nhớ của một chương trình C được chia thành các phân vùng logic riêng biệt nhằm quản lý vòng đời và quyền truy xuất (Read-only vs Read-write) của các biến và mã lệnh:</p>
+
+                    <ul>
+                        <li><strong>ROM/Flash (Bộ nhớ chỉ đọc)</strong>: Chứa vùng <code>.text</code> (mã máy/chương trình) và <code>.rodata</code> (hằng số, chuỗi literal).</li>
+                        <li><strong>RAM (Bộ nhớ đọc-ghi)</strong>: Chứa vùng <code>.data</code> (biến toàn cục/static đã khởi tạo), <code>.bss</code> (biến toàn cục/static chưa khởi tạo, được reset về 0), <strong>Stack</strong> (biến cục bộ, tham số hàm, địa chỉ trả về) và <strong>Heap</strong> (cấp phát động).</li>
+                    </ul>
+
+                    <!-- Simulator: Memory Segments Explorer -->
+                    <div class="sim-container" id="sim-memory-segments">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            Trình Khám phá Phân vùng Bộ nhớ C Tương tác
+                        </div>
+                        <div style="font-size:12px; margin-bottom:12px; color:var(--text-secondary)">Nhấp vào các khai báo biến bên dưới để định vị phân vùng bộ nhớ của chúng:</div>
+                        
+                        <div class="sim-playground">
+                            <div class="memory-segments-grid">
+                                <div class="code-interactive-playground">
+<span class="token-keyword">const</span> <span class="token-type">int</span> <span class="interactive-token" data-segment="rodata">max_speed</span> = <span class="token-number">120</span>; <span class="token-comment">// Hằng số chỉ đọc</span>
+<span class="token-type">int</span> <span class="interactive-token" data-segment="bss">current_speed</span>;             <span class="token-comment">// Toàn cục chưa khởi tạo</span>
+<span class="token-keyword">static</span> <span class="token-type">int</span> <span class="interactive-token" data-segment="data">error_count</span> = <span class="token-number">5</span>;    <span class="token-comment">// Static đã khởi tạo</span>
+
+<span class="token-type">void</span> <span class="token-function">process_can</span>(<span class="token-type">int</span> <span class="interactive-token" data-segment="stack">input_msg</span>) {
+    <span class="token-type">int</span> <span class="interactive-token" data-segment="stack">temp_data</span> = input_msg * <span class="token-number">2</span>;
+    <span class="token-type">char</span> *<span class="interactive-token" data-segment="text">str</span> = <span class="token-string">"CAN_OK"</span>;         <span class="token-comment">// literal ở .rodata, ptr ở Stack</span>
+    <span class="token-type">int</span> *<span class="interactive-token" data-segment="heap">dynamic_buf</span> = NULL;      <span class="token-comment">// pointer ở Stack, trỏ tới Heap</span>
+}
+                                </div>
+                                <div class="segments-visual-stack">
+                                    <div style="font-size:10px; font-weight:700; text-align:center; color:var(--text-muted); margin-bottom:2px;">SƠ ĐỒ PHÂN VÙNG BỘ NHỚ</div>
+                                    <div class="segment-block stack-heap" id="seg-stack">STACK (Vùng nhớ ngăn xếp - RAM)</div>
+                                    <div class="segment-block stack-heap" id="seg-heap" style="text-decoration: line-through; opacity: 0.4;">HEAP (Vùng nhớ cấp phát động - RAM)</div>
+                                    <div class="segment-block ram" id="seg-bss">.bss (RAM - Uninitialized Global Data)</div>
+                                    <div class="segment-block ram" id="seg-data">.data (RAM - Initialized Global Data)</div>
+                                    <div class="segment-block flash" id="seg-rodata">.rodata (ROM/Flash - Read-only Data)</div>
+                                    <div class="segment-block flash" id="seg-text">.text (ROM/Flash - Code Segment)</div>
+                                </div>
+                            </div>
+                            <div class="segment-desc-box">
+                                <div class="segment-desc-title" id="seg-desc-title">Chọn một phần tử để bắt đầu</div>
+                                <div id="seg-desc-body">Bấm vào bất kỳ biến hoặc tham số nào trong đoạn mã C để tìm hiểu phân vùng tương ứng trong cấu trúc bộ nhớ.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Cấm cấp phát động (MISRA C:2012 Rule 21.3)</h3>
+                    <p>Trong lập trình phần mềm ô tô (Safety-critical), vùng nhớ <strong>Heap</strong> và các hàm như <code class="token-function">malloc</code>, <code class="token-function">free</code> hoàn toàn bị cấm vì những lý do đặc thù phần cứng:</p>
+                    
+                    <div class="callout danger">
+                        <div class="callout-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"></path></svg>
+                            Rủi ro của cấp phát động
+                        </div>
+                        <p><strong>1. Phân mảnh bộ nhớ (Heap Fragmentation):</strong> Sau nhiều chu kỳ cấp phát/giải phóng các kích thước khác nhau, bộ nhớ bị chia cắt thành các mảnh vụn. Một tác vụ mới có thể bị từ chối cấp phát dù tổng dung lượng RAM trống vẫn đủ.<br>
+                        <strong>2. Thời gian thực thi không xác định (Non-deterministic Runtime):</strong> Các thuật toán cấp phát nhớ tốn thời gian tìm kiếm không cố định, vi phạm quy tắc khắt khe của hệ thống thời gian thực thực thụ.<br>
+                        <strong>3. Rò rỉ bộ nhớ (Memory Leak):</strong> Đe dọa tài nguyên RAM vốn rất hạn chế của vi điều khiển (MCU) khi chạy liên tục hàng năm trời.</p>
+                    </div>
+
+                    <p><strong>Giải pháp:</strong> Sử dụng <strong>Static Allocation</strong> (Cấp phát tĩnh ở thời điểm biên dịch) hoặc triển khai cơ chế <strong>Memory Pool</strong> (Mảng tĩnh được phân chia trước thành các khối nhớ kích thước cố định, cấp phát với tốc độ xử lý hằng số $O(1)$).</p>
+
+                    <!-- Simulator: Memory Pool vs Heap -->
+                    <div class="sim-container" id="sim-mem-pool">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+                            Mô phỏng Phân mảnh Heap vs Memory Pool
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="allocHeap(8)">Cấp Heap (8 Bytes)</button>
+                            <button class="btn-sim" onclick="allocHeap(16)">Cấp Heap (16 Bytes)</button>
+                            <button class="btn-sim" onclick="freeHeapRandom()">Giải phóng Ngẫu nhiên (Heap)</button>
+                            <button class="btn-sim secondary" onclick="allocPoolBlock()">Cấp Pool (16B Blocks)</button>
+                            <button class="btn-sim secondary" onclick="freePoolBlock()">Giải phóng Pool Block</button>
+                            <button class="btn-sim secondary" onclick="resetMemSim()">Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div style="font-size:12px; margin-bottom:5px; font-weight:600;">RAM ảo (Tổng dung lượng 64 Bytes):</div>
+                            <div class="mem-blocks-container" id="mem-blocks-container">
+                                <!-- Sẽ được tạo bởi JS -->
+                            </div>
+                            <div class="mem-status-text" id="mem-status-text">
+                                Nhấp các nút cấp phát để xem sự khác biệt giữa cấp phát động trên Heap và Memory Pool tĩnh.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Từ khóa volatile</h3>
+                    <p>Trình biên dịch luôn tìm cách tối ưu hóa mã bằng cách nạp giá trị biến vào thanh ghi CPU (Register Caching) thay vì truy xuất RAM chậm chạp. <code class="token-keyword">volatile</code> bắt buộc CPU luôn đọc/ghi trực tiếp từ RAM/Thanh ghi vật lý.</p>
+                    
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">c</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code><span class="token-comment">// KHÔNG sử dụng volatile: Có thể bị lặp vô tận do compiler lưu cache thanh ghi</span>
+<span class="token-type">uint8</span> isReady = <span class="token-number">0</span>;
+<span class="token-type">void</span> <span class="token-function">wait_ready</span>(<span class="token-type">void</span>) {
+    <span class="token-keyword">while</span> (isReady == <span class="token-number">0</span>) { <span class="token-comment">/* Chờ biến đổi trong ngắt ISR */</span> }
+}
+
+<span class="token-comment">// ĐÚNG CHUẨN: Luôn truy cập bộ nhớ trực tiếp</span>
+<span class="token-keyword">volatile</span> <span class="token-type">uint8</span> isReady = <span class="token-number">0</span>;</code></pre>
+                    </div>
+                    <p><strong>Ứng dụng:</strong> Sử dụng cho các thanh ghi cấu hình ngoại vi (SFRs), biến chia sẻ giữa Task và ISR, hoặc biến dùng đồng bộ hóa giữa các core trong hệ thống Multi-core (ví dụ: Infineon Aurix TC3xx).</p>
+
+                    <!-- Simulator: Volatile -->
+                    <div class="sim-container" id="sim-volatile">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                            Mô phỏng Compiler Optimization & Volatile
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" id="btn-run-volatile" onclick="runVolatileSim(false)">Chạy KHÔNG volatile</button>
+                            <button class="btn-sim secondary" onclick="runVolatileSim(true)">Chạy CÓ volatile</button>
+                            <button class="btn-sim secondary" onclick="stopVolatileSim()">Dừng / Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div class="volatile-cpu-state">
+                                <div class="cpu-register">Giá trị RAM: <code>isReady = <span class="register-val" id="ram-isready">0</span></code></div>
+                                <div class="cpu-register">Thanh ghi CPU Cache: <code>R1 = <span class="register-val stale" id="cpu-cache-isready">N/A</span></code></div>
+                            </div>
+                            <div class="volatile-console" id="volatile-console">
+                                Nhấp chọn một chế độ để bắt đầu chạy mô phỏng vòng lặp:
+                                while (isReady == 0) { ... }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Struct Padding & Alignment</h3>
+                    <p>Bộ xử lý 32-bit yêu cầu các kiểu dữ liệu nằm ở địa chỉ bộ nhớ tương thích (ví dụ: 4 bytes đối với kiểu 32-bit). Trình biên dịch sẽ chèn thêm các byte đệm (padding) để căn chỉnh, gây lãng phí bộ nhớ.</p>
+                    
+                    <p><strong>Tối ưu hóa:</strong> Sắp xếp cấu trúc dữ liệu theo thứ tự kích thước giảm dần (lớn trước, nhỏ sau) để triệt tiêu tối đa padding.</p>
+                    
+                    <h4 style="margin:10px 0; font-size:14px; color:var(--text-primary)">Mô hình sắp xếp bộ nhớ Struct (Hệ thống 32-bit):</h4>
+                    <div style="font-size:12px; margin-bottom:5px;">Trường hợp chưa tối ưu (Kích thước: 12 bytes):</div>
+                    <div class="struct-layout">
+                        <div class="memory-byte byte-data">a<span class="byte-label">uint8</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                        <div class="memory-byte byte-data" style="width:180px;">b<span class="byte-label">uint32 (4 bytes)</span></div>
+                        <div class="memory-byte byte-data" style="width:90px;">c<span class="byte-label">uint16 (2B)</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                    </div>
+
+                    <div style="font-size:12px; margin-bottom:5px;">Trường hợp đã tối ưu sắp xếp (Kích thước: 8 bytes):</div>
+                    <div class="struct-layout">
+                        <div class="memory-byte byte-data" style="width:180px;">b<span class="byte-label">uint32 (4 bytes)</span></div>
+                        <div class="memory-byte byte-data" style="width:90px;">c<span class="byte-label">uint16 (2 bytes)</span></div>
+                        <div class="memory-byte byte-data">a<span class="byte-label">uint8</span></div>
+                        <div class="memory-byte byte-pad">pad<span class="byte-label">1 byte</span></div>
+                    </div>
+
+                    <!-- Simulator: Struct Padding -->
+                    <div class="sim-container" id="sim-struct-padding">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            Thiết Kế Struct Alignment & Padding Tương Tác
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="addStructField('uint8')">+ Thêm uint8</button>
+                            <button class="btn-sim" onclick="addStructField('uint16')">+ Thêm uint16</button>
+                            <button class="btn-sim" onclick="addStructField('uint32')">+ Thêm uint32</button>
+                            <button class="btn-sim" onclick="addStructField('uint64')">+ Thêm uint64</button>
+                            <button class="btn-sim secondary" onclick="autoOptimizeStruct()">Tự động Sắp xếp Tối ưu</button>
+                            <button class="btn-sim secondary" onclick="clearStructFields()">Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div class="struct-designer-grid">
+                                <div>
+                                    <div style="font-size:12px; margin-bottom:8px; font-weight:600;">Các biến trong Struct:</div>
+                                    <div class="field-list" id="field-list">
+                                        <!-- Sẽ được thêm bằng JS -->
+                                    </div>
+                                </div>
+                                <div class="struct-result-layout">
+                                    <div class="struct-stats">
+                                        <div class="stat-badge">Tổng kích thước<span id="struct-size">0 Bytes</span></div>
+                                        <div class="stat-badge wasted">Bộ nhớ đệm (Padding)<span id="struct-padding">0 Bytes</span></div>
+                                    </div>
+                                    <div style="font-size:12px; font-weight:600; margin-bottom:-5px;">Bản đồ bộ nhớ Struct (Hệ thống 32-bit):</div>
+                                    <div class="struct-layout" id="struct-visual-layout" style="flex-wrap: wrap; min-height: 50px;">
+                                        <!-- Được vẽ động bởi JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>AUTOSAR Memory Mapping</h3>
+                    <p>AUTOSAR chuẩn hóa cơ chế điều hướng code/data vào các phân vùng phần cứng thông qua file <code class="token-mono">MemMap.h</code>. Cơ chế này trừu tượng hóa các từ khóa định địa chỉ phức tạp của từng loại trình biên dịch khác nhau.</p>
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">c</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code><span class="token-keyword">#define</span> ADC_START_SEC_VAR_CLEARED_32
+<span class="token-keyword">#include</span> <span class="token-string">"Adc_MemMap.h"</span>
+
+<span class="token-type">uint32</span> Adc_GlobalCounter; <span class="token-comment">// Phân bổ vào đúng phân vùng RAM quy định</span>
+
+<span class="token-keyword">#define</span> ADC_STOP_SEC_VAR_CLEARED_32
+<span class="token-keyword">#include</span> <span class="token-string">"Adc_MemMap.h"</span></code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2 -->
+            <section id="advanced-pointers">
+                <h2>2. Con trỏ nâng cao & Callbacks (Advanced Pointers)</h2>
+                
+                <div class="card">
+                    <h3>Con trỏ hàm (Function Pointers) & Callback</h3>
+                    <p>Được dùng làm cơ sở thiết lập cơ chế <strong>Callback</strong> trong hệ thống AUTOSAR BSW. Khi một module tầng thấp (như Driver CAN) cần báo cho tầng trên (như COM) rằng gói tin mới đã được nhận, nó sẽ gọi thông qua một hàm Callback gián tiếp mà không cần phụ thuộc ngược (Compile-time dependency).</p>
+                    
+                    <p>Bên cạnh đó, mảng con trỏ hàm (Jump Table) giúp thực thi <strong>Máy trạng thái (State Machine)</strong> nhanh chóng, loại bỏ sự cồng kềnh và độ trễ rẽ nhánh của cấu trúc <code class="token-keyword">switch-case</code> truyền thống.</p>
+
+                    <!-- Simulator: Callback & Jump Table -->
+                    <div class="sim-container" id="sim-callbacks">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            Mô phỏng Callback & Jump Table State Machine
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="triggerCallbackEvent('IGNITION')">Event: Đóng khóa điện</button>
+                            <button class="btn-sim" onclick="triggerCallbackEvent('START')">Event: Khởi động máy</button>
+                            <button class="btn-sim" onclick="triggerCallbackEvent('STOP')">Event: Tắt máy</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div style="font-size:12px; margin-bottom:5px; font-weight:600;">Mô hình Callback & Trạng thái Hệ thống ECU:</div>
+                            <div class="flow-diagram">
+                                <div class="flow-node" id="node-ecu-state">Trạng thái hiện tại: IDLE</div>
+                                <div class="flow-arrow">↓ Trình điều khiển Ngắt gọi Callback (Jump Table) ↓</div>
+                                <div class="flow-node" id="node-callback-func">Hàm xử lý: None</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Sử dụng từ khóa const chuyên sâu</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Khai báo</th>
+                                <th>Tính chất kỹ thuật</th>
+                                <th>Ứng dụng thực tế</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code class="token-keyword">const</span> <span class="token-type">uint8</span> *ptr</td>
+                                <td>Địa chỉ của con trỏ thay đổi được. Dữ liệu trỏ tới không thể thay đổi thông qua con trỏ này.</td>
+                                <td>Định nghĩa tham số ngõ vào (Input params) cho hàm để tránh ghi đè dữ liệu.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="token-type">uint8</span> * <span class="token-keyword">const</span> ptr</td>
+                                <td>Địa chỉ lưu trong con trỏ cố định. Dữ liệu ở địa chỉ đó có thể ghi đè.</td>
+                                <td>Trỏ đến các địa chỉ thanh ghi phần cứng cố định (SFR).</td>
+                            </tr>
+                            <tr>
+                                <td><span class="token-keyword">const</span> <span class="token-type">uint8</span> * <span class="token-keyword">const</span> ptr</td>
+                                <td>Cố định cả địa chỉ con trỏ và dữ liệu mà nó trỏ tới.</td>
+                                <td>Cấu hình tĩnh (Post-Build / Link-Time Configuration) nằm cố định trên Flash.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Simulator: Const Pointer Playground -->
+                    <div class="sim-container" id="sim-const-ptr">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            Trình kiểm tra đột biến Con trỏ Const (Const Pointer Playground)
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" id="btn-const-mode-1" onclick="setConstMode(1)">Khai báo: const uint8 *ptr</button>
+                            <button class="btn-sim secondary" id="btn-const-mode-2" onclick="setConstMode(2)">Khai báo: uint8 * const ptr</button>
+                            <button class="btn-sim secondary" id="btn-const-mode-3" onclick="setConstMode(3)">Khai báo: const uint8 * const ptr</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div style="font-size:12px; margin-bottom:10px; font-weight:600;">Chọn dòng lệnh dưới để kiểm tra tính hợp lệ trong biên dịch:</div>
+                            <div class="const-code-line" onclick="testConstOperation('write_val')">
+                                <code>*ptr = 10; // Thay đổi dữ liệu ở vùng nhớ trỏ tới</code>
+                                <span class="badge" style="font-size:10px; padding:2px 6px; background-color: var(--accent-glow);">Thử chạy</span>
+                            </div>
+                            <div class="const-code-line" onclick="testConstOperation('write_ptr')">
+                                <code>ptr = &amp;other_val; // Thay đổi địa chỉ con trỏ trỏ tới</code>
+                                <span class="badge" style="font-size:10px; padding:2px 6px; background-color: var(--accent-glow);">Thử chạy</span>
+                            </div>
+                            <div class="const-feedback" id="const-feedback">
+                                Nhấp chọn kiểu khai báo ở trên, sau đó thử chạy các dòng lệnh để kiểm tra tính hợp lệ.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Con trỏ cấp 2 (uint8**) & Zero-copy</h3>
+                    <p>Giúp chuyển giao quyền quản lý vùng đệm (buffer) dữ liệu giữa các layer giao thức truyền thông. Bằng cách truyền con trỏ cấp 2, lớp trên trực tiếp nhận về địa chỉ bộ đệm gốc của lớp dưới, loại bỏ hoàn toàn việc sao chép bộ nhớ (<code class="token-function">memcpy</code>) dư thừa, cải thiện hiệu suất của CPU đáng kể.</p>
+
+                    <!-- Simulator: Zero-Copy -->
+                    <div class="sim-container" id="sim-zero-copy">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                            Mô phỏng Truyền dữ liệu: Zero-copy (uint8**) vs Copy (memcpy)
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="runDataTransfer(false)">Chạy Truyền dữ liệu (Memcpy)</button>
+                            <button class="btn-sim secondary" onclick="runDataTransfer(true)">Chạy Zero-Copy (uint8**)</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div class="pipeline-container">
+                                <div class="pipeline-column">
+                                    <div class="pipeline-title">CAN Driver Buffer (Layer 1)</div>
+                                    <div class="pipeline-track">
+                                        <div class="pipeline-packet" id="packet-layer1">0x3A00</div>
+                                    </div>
+                                </div>
+                                <div class="pipeline-column">
+                                    <div class="pipeline-title">COM Buffer (Layer 2)</div>
+                                    <div class="pipeline-track">
+                                        <div class="pipeline-packet" id="packet-layer2" style="display:none; left: 10px;">0x3A00</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pipeline-stats">
+                                <div>Chế độ: <span id="transfer-mode" style="color:var(--accent-primary); font-weight:700;">Chưa bắt đầu</span></div>
+                                <div>Chu kỳ CPU: <span id="cpu-cycles" style="color:var(--success); font-weight:700;">0</span> cycles</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3 -->
+            <section id="bitwise-typing">
+                <h2>3. Thao tác bit & Kiểu dữ liệu chuẩn (Bitwise & Typing)</h2>
+                
+                <div class="card">
+                    <h3>Hạn chế Bit-fields (MISRA C:2012 Rule 6.1)</h3>
+                    <p>Việc sử dụng cấu trúc bit-field dễ dẫn đến các lỗi phụ thuộc sâu sắc vào cách sắp xếp bit của trình biên dịch (Little-Endian vs Big-Endian) và không đảm bảo khả năng di động mã nguồn.</p>
+                    
+                    <div class="callout warning">
+                        <div class="callout-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"></path></svg>
+                            Lời khuyên tuân thủ MISRA C
+                        </div>
+                        <p>Thay vì viết Bit-field, hãy thực hiện thao tác trực tiếp bằng các toán tử dịch bit (`<<`, `>>`) kết hợp mặt nạ (Masking) tường minh nhằm đảm bảo an toàn tuyệt đối và rõ ràng.</p>
+                    </div>
+
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">c</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code><span class="token-comment">// Cấu hình bit an toàn sử dụng mặt nạ (Mask) và toán tử Bitwise</span>
+<span class="token-keyword">#define</span> CAN_CTRL_REG_ADDR   (<span class="token-keyword">volatile</span> <span class="token-type">uint32</span>* <span class="token-keyword">const</span>)<span class="token-number">0x40001000U</span>
+<span class="token-keyword">#define</span> CAN_ENABLE_MASK     (<span class="token-type">uint32</span>)(<span class="token-number">1U</span> &lt;&lt; <span class="token-number">5U</span>)
+
+<span class="token-type">void</span> <span class="token-function">Enable_CAN</span>(<span class="token-type">void</span>) {
+    *CAN_CTRL_REG_ADDR |= CAN_ENABLE_MASK; <span class="token-comment">// Set bit 5 lên 1 mà không làm thay đổi các bit khác</span>
+}</code></pre>
+                    </div>
+
+                    <!-- Simulator: Bitwise Register -->
+                    <div class="sim-container" id="sim-bitwise">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                            Điều khiển Bitwise & Thanh ghi CAN_CTRL_REG (8-bit ảo)
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="applyRegisterMacro('set_bit_5')">Chạy macro: Enable CAN (*Reg |= (1U &lt;&lt; 5))</button>
+                            <button class="btn-sim secondary" onclick="applyRegisterMacro('clear_bit_5')">Chạy macro: Disable CAN (*Reg &amp;= ~(1U &lt;&lt; 5))</button>
+                            <button class="btn-sim secondary" onclick="applyRegisterMacro('toggle_bit_3')">Toggle Bit 3 (*Reg ^= (1U &lt;&lt; 3))</button>
+                            <button class="btn-sim secondary" onclick="resetRegisterSim()">Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div style="font-size:12px; margin-bottom:8px; font-weight:600;">Nhấp vào các ô bit để tự tay thay đổi trạng thái (Bit 0 đến Bit 7):</div>
+                            <div class="register-grid" id="register-grid">
+                                <!-- 8 Bit Cells generated dynamically -->
+                            </div>
+                            <div class="register-outputs">
+                                <div>
+                                    <span class="output-label">Mã Binary:</span>
+                                    <span class="output-value" id="reg-val-bin">00000000b</span>
+                                </div>
+                                <div>
+                                    <span class="output-label">Mã Hex:</span>
+                                    <span class="output-value" id="reg-val-hex">0x00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Kiểu dữ liệu nghiêm ngặt (Strict Typing)</h3>
+                    <p>Bắt buộc sử dụng các định dạng dữ liệu có độ rộng bit xác định (như quy định trong tiêu chuẩn <code class="token-mono">stdint.h</code> hay <code class="token-mono">Platform_Types.h</code> của AUTOSAR) như <code class="token-type">uint8</code>, <code class="token-type">uint16</code>, <code class="token-type">uint32</code>, <code class="token-type">sint32</code>, <code class="token-type">boolean</code>. Cấm sử dụng các kiểu nguyên thủy không xác định độ rộng như <code class="token-type">int</code>, <code class="token-type">char</code>, <code class="token-type">short</code>.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 4 -->
+            <section id="misra-defensive">
+                <h2>4. Tiêu chuẩn MISRA C & Lập trình phòng thủ (Defensive Coding)</h2>
+                
+                <div class="card">
+                    <h3>Ép kiểu tường minh (Explicit Casting)</h3>
+                    <p>Mọi quá trình chuyển đổi kiểu dữ liệu bắt buộc phải dùng toán tử cast tường minh để hạn chế rủi ro tràn số ngầm định hoặc mất dấu dữ liệu:</p>
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">c</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code><span class="token-type">uint16</span> val16 = <span class="token-number">400U</span>;
+<span class="token-type">uint8</span> val8 = (<span class="token-type">uint8</span>)val16; <span class="token-comment">// Cast tường minh để báo cho compiler biết ta chấp nhận mất mát dữ liệu</span></code></pre>
+                    </div>
+                    <p>Luôn khai báo các hằng số với hậu tố cụ thể (Ví dụ: <code class="token-number">100U</code>, <code class="token-number">255ULL</code>) để chỉ thị chính xác thuộc tính kiểu dữ liệu.</p>
+                </div>
+
+                <div class="card">
+                    <h3>Kiểm soát Side Effects (Tác dụng phụ)</h3>
+                    <p>Các phép toán thay đổi giá trị như <code class="token-mono">++</code>, <code class="token-mono">--</code> không được sử dụng chung trong các khối lệnh điều kiện (<code class="token-keyword">if</code>, <code class="token-keyword">while</code>) vì các compiler khác nhau có thể áp dụng quy tắc thực thi tối ưu hóa ngắn mạch, dẫn đến hành vi hoạt động sai lệch.</p>
+
+                    <!-- Simulator: Side Effects -->
+                    <div class="sim-container" id="sim-side-effects">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"></path></svg>
+                            Mô phỏng Side-Effect & Tối ưu hóa Ngắn mạch (Short-Circuit)
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="runSideEffectsSim(5, 10)">Chạy với a = 5, b = 10</button>
+                            <button class="btn-sim secondary" onclick="runSideEffectsSim(6, 10)">Chạy với a = 6, b = 10</button>
+                            <button class="btn-sim secondary" onclick="resetSideEffectsSim()">Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div class="effects-visualizer">
+                                <div class="effects-vars">
+                                    <div class="effect-var-box">Đầu vào ban đầu: <code>a = <span id="var-a-init">?</span></code>, <code>b = <span id="var-b-init">?</span></code></div>
+                                    <div class="effect-var-box">Giá trị hiện thời: <code>a = <span id="var-a-val">?</span></code>, <code>b = <span id="var-b-val">?</span></code></div>
+                                </div>
+                                <div style="font-size:12px; margin-bottom:5px; font-weight:600;">Biểu thức điều kiện: <code>if (a++ == 5 || b++ == 10)</code></div>
+                                <div class="effects-trace-step" id="effects-trace-1">
+                                    <strong>Bước 1:</strong> Đánh giá vế trái <code>a++ == 5</code> ...
+                                </div>
+                                <div class="effects-trace-step" id="effects-trace-2" style="margin-top: 5px;">
+                                    <strong>Bước 2:</strong> Đánh giá vế phải <code>b++ == 10</code> ...
+                                </div>
+                                <div class="effects-trace-step" id="effects-trace-result" style="margin-top: 5px;">
+                                    <strong>Kết quả:</strong> Trạng thái sau cùng...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Kiểm tra giá trị trả về (Return Values Checking)</h3>
+                    <p>Bắt buộc kiểm tra mã trả về của tất cả các hàm hệ thống và ứng dụng (như <code class="token-type">Std_ReturnType</code> với <code class="token-number">E_OK</code>). Phải thiết kế cơ chế xử lý lỗi tường minh trong mọi trường hợp, đảm bảo an toàn chức năng (Functional Safety) cho toàn hệ thống ô tô.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 5 -->
+            <section id="concurrency">
+                <h2>5. Tính tái nhập & Đồng bộ hóa (Reentrancy & Concurrency)</h2>
+                
+                <div class="card">
+                    <h3>Hàm tái nhập (Reentrant Functions)</h3>
+                    <p>Là các hàm được thiết kế để có thể thực thi an toàn khi bị ngắt đồng thời bởi các tác vụ có mức ưu tiên cao hơn hoặc các luồng ngắt (ISR).</p>
+                    
+                    <div class="callout success">
+                        <div class="callout-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            Đặc điểm của hàm Reentrant
+                        </div>
+                        <p>1. Không sử dụng, thao tác biến toàn cục (Global Variables).<br>
+                        2. Không dùng biến tĩnh cục bộ (Static Local Variables).<br>
+                        3. Mọi phép toán chỉ thực hiện trên Stack (biến cục bộ thường) hoặc qua dữ liệu truyền vào của đối số.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Bảo vệ vùng găng (Critical Sections trong AUTOSAR OS)</h3>
+                    <p>Bảo vệ tính nhất quán dữ liệu trước các xung đột tài nguyên giữa các Task/ISR:</p>
+                    <ul>
+                        <li><strong>SuspendAllInterrupts() / ResumeAllInterrupts():</strong> Vô hiệu hóa/Kích hoạt lại các ngắt toàn cục cấp độ phần cứng. Khuyến cáo chỉ dùng để che chắn các đoạn lệnh xử lý cực ngắn (vài lệnh ASM) để tránh bỏ lỡ các ngắt quan trọng khác của hệ thống ô tô.</li>
+                        <li><strong>GetResource() / ReleaseResource():</strong> Được quản lý bởi hệ điều hành, sử dụng giao thức <strong>Priority Ceiling Protocol (Trần ưu tiên)</strong> nhằm loại bỏ hoàn toàn nguy cơ xảy ra hiện tượng Nghịch đảo độ ưu tiên (Priority Inversion) hoặc bế tắc (Deadlock).</li>
+                    </ul>
+
+                    <!-- Simulator: Concurrency & Critical Section -->
+                    <div class="sim-container" id="sim-concurrency">
+                        <div class="sim-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Mô phỏng Tranh chấp Bộ nhớ & Bảo vệ Vùng găng (Race Condition)
+                        </div>
+                        <div class="sim-controls">
+                            <button class="btn-sim" onclick="runConcurrencySim('none')">Chạy KHÔNG bảo vệ (Race Condition)</button>
+                            <button class="btn-sim secondary" onclick="runConcurrencySim('suspend')">Chạy với SuspendAllInterrupts()</button>
+                            <button class="btn-sim secondary" onclick="runConcurrencySim('resource')">Chạy với GetResource() (Ceiling Prot.)</button>
+                            <button class="btn-sim secondary" onclick="resetConcurrencySim()">Reset</button>
+                        </div>
+                        <div class="sim-playground">
+                            <div style="font-size:12px; margin-bottom:10px; font-weight:600;">Timeline Thực thi của Tác vụ & Ngắt (ISR):</div>
+                            <div class="scheduler-timeline">
+                                <div class="thread-row">
+                                    <div class="thread-label">Task A (Low Pri)</div>
+                                    <div class="thread-bar-container" id="timeline-task-a">
+                                        <!-- Task A timeline segments -->
+                                    </div>
+                                </div>
+                                <div class="thread-row">
+                                    <div class="thread-label">ISR B (High Pri)</div>
+                                    <div class="thread-bar-container" id="timeline-isr-b">
+                                        <!-- ISR B timeline segments -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="shared-var-box">
+                                <div>Biến toàn cục dùng chung: <code>SharedCounter</code></div>
+                                <div>Giá trị thực tế mong muốn: <span style="font-family: var(--font-mono); font-weight:700;">2</span></div>
+                                <div>Giá trị kết quả: <span class="shared-var-val" id="shared-var-result">0</span></div>
+                            </div>
+                            <div class="mem-status-text" id="concurrency-status" style="margin-top: 10px;">
+                                Chọn một chế độ bảo vệ để quan sát biểu đồ thực thi và kết quả dữ liệu.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer>
+                <p>&copy; 2026. Phân tích chuyên sâu lập trình nhúng C Automotive.</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Logic scripts (Theme toggle & Copy functionality) -->
+    <script>
+        // Theme switching logic
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+
+        // Check for saved theme preference or default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcons(savedTheme);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcons(newTheme);
+        });
+
+        function updateThemeIcons(theme) {
+            if (theme === 'light') {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            } else {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            }
+        }
+
+        // Copy code feature
+        function copyCode(button) {
+            const pre = button.parentElement.nextElementSibling;
+            const codeText = pre.textContent;
+            
+            navigator.clipboard.writeText(codeText).then(() => {
+                button.textContent = 'Copied!';
+                button.style.borderColor = 'var(--success)';
+                button.style.color = 'var(--success)';
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    button.style.color = 'var(--text-secondary)';
+                }, 2000);
+            }).catch(err => {
+                console.error('Không thể copy code: ', err);
+            });
+        }
+
+        // Sidebar active link state tracking on scroll
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let currentActive = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 120)) {
+                    currentActive = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentActive}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Simple search functionality
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('input', (e) => {
+            const text = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.card');
+            
+            cards.forEach(card => {
+                const cardTitle = card.querySelector('h3').textContent.toLowerCase();
+                const cardBody = card.textContent.toLowerCase();
+                
+                if (cardTitle.includes(text) || cardBody.includes(text)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // ==========================================
+        //        INTERACTIVE SIMULATORS LOGIC
+        // ==========================================
+
+        // --- 1. MEMORY POOL & HEAP SIMULATION ---
+        let heapMemory = Array(64).fill(0); // 0 = free, 1 = allocated, 2 = fragmentation
+        let heapAllocations = [];
+        let poolAllocations = Array(4).fill(false); // 4 blocks of 16 Bytes
+
+        function updateMemVisuals() {
+            const container = document.getElementById('mem-blocks-container');
+            container.innerHTML = '';
+            
+            for(let i = 0; i < 64; i++) {
+                const block = document.createElement('div');
+                block.className = 'mem-block';
+                
+                if (heapMemory[i] === 0) {
+                    block.className += ' free';
+                    block.innerText = 'F';
+                } else if (heapMemory[i] === 1) {
+                    block.className += ' allocated';
+                    block.innerHTML = `A<span class="mem-block-label">Byte ${i}</span>`;
+                }
+                container.appendChild(block);
+            }
+        }
+
+        function allocHeap(size) {
+            let startIndex = -1;
+            let currentCount = 0;
+            for(let i = 0; i < 64; i++) {
+                if (heapMemory[i] === 0) {
+                    if (startIndex === -1) startIndex = i;
+                    currentCount++;
+                    if (currentCount === size) break;
+                } else {
+                    startIndex = -1;
+                    currentCount = 0;
+                }
+            }
+            
+            const statusText = document.getElementById('mem-status-text');
+            if (currentCount === size) {
+                for(let i = startIndex; i < startIndex + size; i++) {
+                    heapMemory[i] = 1;
+                }
+                heapAllocations.push({start: startIndex, size: size});
+                statusText.innerText = `Cấp phát Heap thành công: ${size} Bytes tại địa chỉ ảo ${startIndex}.`;
+                statusText.style.color = 'var(--success)';
+            } else {
+                statusText.innerText = `LỖI: Trình biên dịch từ chối cấp phát ${size} Bytes do phân mảnh bộ nhớ (Heap Fragmentation)!`;
+                statusText.style.color = 'var(--danger)';
+            }
+            updateMemVisuals();
+        }
+
+        function freeHeapRandom() {
+            const statusText = document.getElementById('mem-status-text');
+            if (heapAllocations.length === 0) {
+                statusText.innerText = "Không có vùng nhớ Heap nào đang hoạt động để giải phóng.";
+                statusText.style.color = 'var(--warning)';
+                return;
+            }
+            const index = Math.floor(Math.random() * heapAllocations.length);
+            const alloc = heapAllocations.splice(index, 1)[0];
+            
+            for(let i = alloc.start; i < alloc.start + alloc.size; i++) {
+                heapMemory[i] = 0;
+            }
+            statusText.innerText = `Đã giải phóng vùng nhớ ${alloc.size} Bytes tại địa chỉ ảo ${alloc.start}.`;
+            statusText.style.color = 'var(--text-secondary)';
+            updateMemVisuals();
+        }
+
+        function allocPoolBlock() {
+            const statusText = document.getElementById('mem-status-text');
+            let blockIndex = poolAllocations.indexOf(false);
+            
+            if (blockIndex !== -1) {
+                poolAllocations[blockIndex] = true;
+                let start = blockIndex * 16;
+                for(let i = start; i < start + 16; i++) {
+                    heapMemory[i] = 1;
+                }
+                statusText.innerText = `Cấp phát Memory Pool thành công: Khối ${blockIndex + 1} (16 Bytes) tại địa chỉ ${start}. Thời gian phản hồi hằng số O(1).`;
+                statusText.style.color = 'var(--success)';
+            } else {
+                statusText.innerText = "LỖI: Hết bộ nhớ Pool khả dụng (4/4 khối đã đầy).";
+                statusText.style.color = 'var(--danger)';
+            }
+            updateMemVisuals();
+        }
+
+        function freePoolBlock() {
+            const statusText = document.getElementById('mem-status-text');
+            let blockIndex = poolAllocations.lastIndexOf(true);
+            if (blockIndex !== -1) {
+                poolAllocations[blockIndex] = false;
+                let start = blockIndex * 16;
+                for(let i = start; i < start + 16; i++) {
+                    heapMemory[i] = 0;
+                }
+                statusText.innerText = `Đã giải phóng Memory Pool: Khối ${blockIndex + 1} (16 Bytes) tại địa chỉ ${start}.`;
+                statusText.style.color = 'var(--text-secondary)';
+            } else {
+                statusText.innerText = "Không có khối Memory Pool nào đang hoạt động để giải phóng.";
+                statusText.style.color = 'var(--warning)';
+            }
+            updateMemVisuals();
+        }
+
+        function resetMemSim() {
+            heapMemory = Array(64).fill(0);
+            heapAllocations = [];
+            poolAllocations = Array(4).fill(false);
+            document.getElementById('mem-status-text').innerText = "Đã reset vùng nhớ ảo về trạng thái ban đầu.";
+            document.getElementById('mem-status-text').style.color = 'var(--text-secondary)';
+            updateMemVisuals();
+        }
+
+        // --- 2. VOLATILE SIMULATION ---
+        let volatileInterval = null;
+        let isReadyVal = 0;
+        let isVolatileRunning = false;
+
+        function runVolatileSim(isVolatile) {
+            if (isVolatileRunning) return;
+            isVolatileRunning = true;
+            isReadyVal = 0;
+            
+            const consoleBox = document.getElementById('volatile-console');
+            const ramEl = document.getElementById('ram-isready');
+            const cpuEl = document.getElementById('cpu-cache-isready');
+            
+            ramEl.innerText = '0';
+            cpuEl.innerText = '0';
+            cpuEl.className = 'register-val';
+            
+            consoleBox.innerHTML = `[CPU] Khởi chạy vòng lặp wait_ready()...<br>`;
+            consoleBox.innerHTML += `[CPU] Đang nạp giá trị từ RAM vào thanh ghi CPU cache R1...<br>`;
+            
+            let cycles = 0;
+            volatileInterval = setInterval(() => {
+                cycles++;
+                if (cycles === 3) {
+                    consoleBox.innerHTML += `<span style="color:var(--warning)">[ISR] Ngắt phần cứng kích hoạt! Thay đổi isReady = 1 trong RAM.</span><br>`;
+                    isReadyVal = 1;
+                    ramEl.innerText = '1';
+                }
+                
+                if (isVolatile) {
+                    consoleBox.innerHTML += `[CPU] Lần lặp ${cycles}: Đọc trực tiếp RAM -> isReady = ${isReadyVal}.<br>`;
+                    if (isReadyVal === 1) {
+                        consoleBox.innerHTML += `<span style="color:var(--success)">[CPU] Phát hiện isReady == 1! Thoát vòng lặp thành công.</span><br>`;
+                        clearInterval(volatileInterval);
+                        isVolatileRunning = false;
+                    }
+                } else {
+                    consoleBox.innerHTML += `[CPU] Lần lặp ${cycles}: Sử dụng CPU cache R1 -> isReady = 0 (RAM là ${isReadyVal}).<br>`;
+                    if (cycles >= 7) {
+                        consoleBox.innerHTML += `<span style="color:var(--danger)">[CPU] CPU kẹt trong vòng lặp vô tận (Register Caching) do thiếu volatile!</span><br>`;
+                        cpuEl.className = 'register-val stale';
+                        clearInterval(volatileInterval);
+                        isVolatileRunning = false;
+                    }
+                }
+                consoleBox.scrollTop = consoleBox.scrollHeight;
+            }, 800);
+        }
+
+        function stopVolatileSim() {
+            if (volatileInterval) {
+                clearInterval(volatileInterval);
+            }
+            isVolatileRunning = false;
+            document.getElementById('ram-isready').innerText = '0';
+            document.getElementById('cpu-cache-isready').innerText = 'N/A';
+            document.getElementById('cpu-cache-isready').className = 'register-val stale';
+            document.getElementById('volatile-console').innerText = 'Đã reset trình mô phỏng volatile. Nhấp chọn chế độ để chạy lại.';
+        }
+
+        // --- 3. STRUCT ALIGNMENT & PADDING ---
+        let structFields = [];
+
+        function addStructField(type) {
+            let size = 0;
+            if (type === 'uint8') size = 1;
+            else if (type === 'uint16') size = 2;
+            else if (type === 'uint32') size = 4;
+            else if (type === 'uint64') size = 8;
+            
+            structFields.push({ type: type, size: size, id: Date.now() + Math.random() });
+            renderStructDesigner();
+        }
+
+        function removeStructField(id) {
+            structFields = structFields.filter(f => f.id !== id);
+            renderStructDesigner();
+        }
+
+        function clearStructFields() {
+            structFields = [];
+            renderStructDesigner();
+        }
+
+        function autoOptimizeStruct() {
+            structFields.sort((a, b) => b.size - a.size);
+            renderStructDesigner();
+        }
+
+        function renderStructDesigner() {
+            const listContainer = document.getElementById('field-list');
+            listContainer.innerHTML = '';
+            structFields.forEach(field => {
+                const item = document.createElement('div');
+                item.className = 'field-item';
+                item.innerHTML = `
+                    <div class="field-info">
+                        <span class="field-type">${field.type}</span>
+                        <span class="field-name">data_${field.type}</span>
+                    </div>
+                    <button class="btn-remove-field" onclick="removeStructField(${field.id})">&times;</button>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            let currentOffset = 0;
+            let layoutHTML = '';
+            let maxAlign = 1;
+            
+            structFields.forEach((field) => {
+                if (field.size > maxAlign) maxAlign = field.size;
+                
+                let alignment = field.size;
+                let misaligned = currentOffset % alignment;
+                if (misaligned !== 0) {
+                    let paddingSize = alignment - misaligned;
+                    for (let p = 0; p < paddingSize; p++) {
+                        layoutHTML += `<div class="memory-byte byte-pad">pad<span class="byte-label">Byte ${currentOffset}</span></div>`;
+                        currentOffset++;
+                    }
+                }
+                
+                if (field.size === 1) {
+                    layoutHTML += `<div class="memory-byte byte-data">u8<span class="byte-label">Byte ${currentOffset}</span></div>`;
+                    currentOffset += 1;
+                } else if (field.size === 2) {
+                    layoutHTML += `<div class="memory-byte byte-data" style="width: 80px;">u16<span class="byte-label">Byte ${currentOffset}-${currentOffset+1}</span></div>`;
+                    currentOffset += 2;
+                } else if (field.size === 4) {
+                    layoutHTML += `<div class="memory-byte byte-data" style="width: 160px;">u32<span class="byte-label">Byte ${currentOffset}-${currentOffset+3}</span></div>`;
+                    currentOffset += 4;
+                } else if (field.size === 8) {
+                    layoutHTML += `<div class="memory-byte byte-data" style="width: 240px;">u64<span class="byte-label">Byte ${currentOffset}-${currentOffset+7}</span></div>`;
+                    currentOffset += 8;
+                }
+            });
+            
+            let structTotalPadding = 0;
+            if (structFields.length > 0) {
+                let misalignedStruct = currentOffset % maxAlign;
+                if (misalignedStruct !== 0) {
+                    let finalPadding = maxAlign - misalignedStruct;
+                    for (let p = 0; p < finalPadding; p++) {
+                        layoutHTML += `<div class="memory-byte byte-pad">pad<span class="byte-label">Byte ${currentOffset}</span></div>`;
+                        currentOffset++;
+                    }
+                }
+                
+                let actualDataBytes = structFields.reduce((sum, f) => sum + f.size, 0);
+                structTotalPadding = currentOffset - actualDataBytes;
+            }
+            
+            document.getElementById('struct-size').innerText = `${currentOffset} Bytes`;
+            document.getElementById('struct-padding').innerText = `${structTotalPadding} Bytes`;
+            
+            const layoutContainer = document.getElementById('struct-visual-layout');
+            if (structFields.length === 0) {
+                layoutContainer.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding: 15px; width: 100%; text-align: center;">Chưa có phần tử nào trong Struct. Hãy nhấp chọn nút phía trên.</div>';
+            } else {
+                layoutContainer.innerHTML = layoutHTML;
+            }
+        }
+
+        // --- 4. CALLBACKS STATE MACHINE ---
+        let currentEcuState = 'IDLE';
+        const stateTransitions = {
+            'IDLE': { 'IGNITION': 'ACCESSORY', func: 'cb_IgnitionClosed' },
+            'ACCESSORY': { 'START': 'RUNNING', func: 'cb_EngineStarted' },
+            'RUNNING': { 'STOP': 'IDLE', func: 'cb_EngineStopped' }
+        };
+
+        function triggerCallbackEvent(event) {
+            const nextTransition = stateTransitions[currentEcuState];
+            const ecuStateEl = document.getElementById('node-ecu-state');
+            const callbackFuncEl = document.getElementById('node-callback-func');
+            
+            if (nextTransition && nextTransition[event]) {
+                const nextState = nextTransition[event];
+                const callbackFunc = nextTransition.func;
+                
+                ecuStateEl.classList.add('active');
+                callbackFuncEl.classList.add('active');
+                
+                ecuStateEl.innerText = `Chuyển trạng thái: ${currentEcuState} -> ${nextState}`;
+                callbackFuncEl.innerText = `Gọi Callback: ${callbackFunc}() qua Jump Table`;
+                
+                setTimeout(() => {
+                    currentEcuState = nextState;
+                    ecuStateEl.innerText = `Trạng thái hiện tại: ${currentEcuState}`;
+                    callbackFuncEl.innerText = `Chờ sự kiện tiếp theo...`;
+                    ecuStateEl.classList.remove('active');
+                    callbackFuncEl.classList.remove('active');
+                }, 1500);
+            } else {
+                ecuStateEl.innerText = `LỖI: Sự kiện ${event} không hợp lệ ở trạng thái ${currentEcuState}`;
+                callbackFuncEl.innerText = `Không kích hoạt Callback (Trạng thái được giữ nguyên)`;
+            }
+        }
+
+        // --- 5. CONST PLAYGROUND ---
+        let constMode = 1;
+
+        function setConstMode(mode) {
+            constMode = mode;
+            document.getElementById('btn-const-mode-1').className = 'btn-sim ' + (mode === 1 ? '' : 'secondary');
+            document.getElementById('btn-const-mode-2').className = 'btn-sim ' + (mode === 2 ? '' : 'secondary');
+            document.getElementById('btn-const-mode-3').className = 'btn-sim ' + (mode === 3 ? '' : 'secondary');
+            
+            const feedback = document.getElementById('const-feedback');
+            feedback.innerText = "Thay đổi cấu hình khai báo. Hãy chạy thử các dòng lệnh dưới.";
+            feedback.style.color = "var(--text-secondary)";
+            
+            document.querySelectorAll('.const-code-line').forEach(line => {
+                line.className = 'const-code-line';
+            });
+        }
+
+        function testConstOperation(op) {
+            const feedback = document.getElementById('const-feedback');
+            const lines = document.querySelectorAll('.const-code-line');
+            
+            let isError = false;
+            let msg = '';
+            
+            if (constMode === 1) { 
+                if (op === 'write_val') {
+                    isError = true;
+                    msg = "LỖI BIÊN DỊCH: assignment of read-only location '*ptr' (Dữ liệu bị cố định bởi const).";
+                } else {
+                    isError = false;
+                    msg = "BIÊN DỊCH THÀNH CÔNG: Thay đổi địa chỉ trỏ tới hợp lệ (Con trỏ không cố định).";
+                }
+            } else if (constMode === 2) { 
+                if (op === 'write_val') {
+                    isError = false;
+                    msg = "BIÊN DỊCH THÀNH CÔNG: Thay đổi giá trị vùng nhớ hợp lệ (Dữ liệu không cố định).";
+                } else {
+                    isError = true;
+                    msg = "LỖI BIÊN DỊCH: assignment of read-only variable 'ptr' (Địa chỉ con trỏ bị cố định).";
+                }
+            } else if (constMode === 3) { 
+                isError = true;
+                msg = `LỖI BIÊN DỊCH: Cả địa chỉ con trỏ và dữ liệu đều bị cố định bởi const.`;
+            }
+            
+            const activeLine = op === 'write_val' ? lines[0] : lines[1];
+            lines.forEach(l => l.className = 'const-code-line');
+            
+            if (isError) {
+                activeLine.classList.add('error');
+                feedback.style.color = 'var(--danger)';
+                feedback.innerText = msg;
+            } else {
+                activeLine.classList.add('success');
+                feedback.style.color = 'var(--success)';
+                feedback.innerText = msg;
+            }
+        }
+
+        // --- 6. ZERO-COPY VS MEMCPY SIMULATION ---
+        let transferInterval = null;
+
+        function runDataTransfer(isZeroCopy) {
+            if (transferInterval) clearInterval(transferInterval);
+            
+            const p1 = document.getElementById('packet-layer1');
+            const p2 = document.getElementById('packet-layer2');
+            const modeEl = document.getElementById('transfer-mode');
+            const cyclesEl = document.getElementById('cpu-cycles');
+            
+            p1.style.left = '10px';
+            p1.style.top = '25px';
+            p2.style.display = 'none';
+            p2.style.left = '10px';
+            
+            let cycles = 0;
+            let step = 0;
+            
+            if (isZeroCopy) {
+                modeEl.innerText = "Zero-Copy (uint8**)";
+                p1.style.backgroundColor = 'var(--success)';
+                p1.innerText = '0x3A00';
+                
+                transferInterval = setInterval(() => {
+                    step++;
+                    if (step === 1) {
+                        cycles = 2; 
+                        cyclesEl.innerText = cycles;
+                        p1.style.left = '120px';
+                    } else if (step === 2) {
+                        p2.style.display = 'flex';
+                        p2.style.left = '10px';
+                        p2.innerText = '0x3A00'; 
+                        clearInterval(transferInterval);
+                    }
+                }, 500);
+            } else {
+                modeEl.innerText = "Memcpy Copy Data";
+                p1.style.backgroundColor = 'var(--accent-secondary)';
+                p1.innerText = 'DATA';
+                p2.innerText = 'DATA';
+                
+                transferInterval = setInterval(() => {
+                    step++;
+                    if (step === 1) {
+                        p1.style.left = '120px';
+                        cycles = 42; 
+                        cyclesEl.innerText = cycles;
+                    } else if (step === 2) {
+                        p2.style.display = 'flex';
+                        p2.style.left = '10px';
+                    } else if (step === 3) {
+                        p1.style.left = '10px';
+                        clearInterval(transferInterval);
+                    }
+                }, 500);
+            }
+        }
+
+        // --- 7. BITWISE REGISTER CONTROL ---
+        let registerVal = 0;
+
+        function renderRegisterGrid() {
+            const grid = document.getElementById('register-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 7; i >= 0; i--) {
+                const cell = document.createElement('div');
+                const bitState = (registerVal & (1 << i)) !== 0;
+                cell.className = 'bit-cell' + (bitState ? ' active' : '');
+                cell.onclick = () => toggleRegisterBit(i);
+                
+                cell.innerHTML = `
+                    <span class="bit-val">${bitState ? '1' : '0'}</span>
+                    <span class="bit-index">Bit ${i}</span>
+                `;
+                grid.appendChild(cell);
+            }
+            
+            document.getElementById('reg-val-bin').innerText = registerVal.toString(2).padStart(8, '0') + 'b';
+            document.getElementById('reg-val-hex').innerText = '0x' + registerVal.toString(16).toUpperCase().padStart(2, '0');
+        }
+
+        function toggleRegisterBit(bit) {
+            registerVal ^= (1 << bit);
+            renderRegisterGrid();
+        }
+
+        function applyRegisterMacro(action) {
+            if (action === 'set_bit_5') {
+                registerVal |= (1 << 5);
+            } else if (action === 'clear_bit_5') {
+                registerVal &= ~(1 << 5);
+            } else if (action === 'toggle_bit_3') {
+                registerVal ^= (1 << 3);
+            }
+            renderRegisterGrid();
+        }
+
+        function resetRegisterSim() {
+            registerVal = 0;
+            renderRegisterGrid();
+        }
+
+        // --- 8. SIDE EFFECTS SIMULATOR ---
+        function runSideEffectsSim(initA, initB) {
+            let a = initA;
+            let b = initB;
+            
+            document.getElementById('var-a-init').innerText = initA;
+            document.getElementById('var-b-init').innerText = initB;
+            document.getElementById('var-a-val').innerText = a;
+            document.getElementById('var-b-val').innerText = b;
+            
+            const t1 = document.getElementById('effects-trace-1');
+            const t2 = document.getElementById('effects-trace-2');
+            const tRes = document.getElementById('effects-trace-result');
+            
+            t1.className = 'effects-trace-step active';
+            t2.className = 'effects-trace-step';
+            tRes.className = 'effects-trace-step';
+            
+            t1.innerHTML = `<strong>Bước 1:</strong> Đánh giá vế trái <code>a++ == 5</code>...`;
+            t2.innerHTML = `<strong>Bước 2:</strong> Vế phải <code>b++ == 10</code>...`;
+            tRes.innerHTML = `<strong>Kết quả:</strong> Trạng thái sau cùng...`;
+            
+            setTimeout(() => {
+                let leftVal = (a === 5);
+                a++; 
+                document.getElementById('var-a-val').innerText = a;
+                
+                t1.innerHTML = `<strong>Bước 1:</strong> Đánh giá vế trái <code>a++ == 5</code> -> <strong>${leftVal.toString().toUpperCase()}</strong> (a tăng lên ${a})`;
+                t1.className = 'effects-trace-step';
+                t2.className = 'effects-trace-step active';
+                
+                setTimeout(() => {
+                    if (leftVal) {
+                        t2.innerHTML = `<strong>Bước 2:</strong> Bỏ qua vế phải <code>b++ == 10</code> (Do vế trái đã TRUE, phép toán || ngắn mạch!)`;
+                        t2.className = 'effects-trace-step';
+                        tRes.className = 'effects-trace-step active';
+                        
+                        setTimeout(() => {
+                            tRes.innerHTML = `<strong>Kết quả:</strong> Biểu thức trả về <strong>TRUE</strong>. Biến đổi phụ: a = ${a}, b = ${b} (b KHÔNG tăng, đây là side-effect nguy hiểm!)`;
+                            tRes.className = 'effects-trace-step';
+                        }, 1000);
+                    } else {
+                        let rightVal = (b === 10);
+                        b++;
+                        document.getElementById('var-b-val').innerText = b;
+                        
+                        t2.innerHTML = `<strong>Bước 2:</strong> Đánh giá vế phải <code>b++ == 10</code> -> <strong>${rightVal.toString().toUpperCase()}</strong> (b tăng lên ${b})`;
+                        t2.className = 'effects-trace-step';
+                        tRes.className = 'effects-trace-step active';
+                        
+                        setTimeout(() => {
+                            let finalRes = leftVal || rightVal;
+                            tRes.innerHTML = `<strong>Kết quả:</strong> Biểu thức trả về <strong>${finalRes.toString().toUpperCase()}</strong>. Biến đổi phụ: a = ${a}, b = ${b}`;
+                            tRes.className = 'effects-trace-step';
+                        }, 1000);
+                    }
+                }, 1200);
+            }, 1000);
+        }
+
+        function resetSideEffectsSim() {
+            document.getElementById('var-a-init').innerText = '?';
+            document.getElementById('var-b-init').innerText = '?';
+            document.getElementById('var-a-val').innerText = '?';
+            document.getElementById('var-b-val').innerText = '?';
+            
+            document.getElementById('effects-trace-1').className = 'effects-trace-step';
+            document.getElementById('effects-trace-2').className = 'effects-trace-step';
+            document.getElementById('effects-trace-result').className = 'effects-trace-step';
+            
+            document.getElementById('effects-trace-1').innerHTML = `<strong>Bước 1:</strong> Đánh giá vế trái <code>a++ == 5</code> ...`;
+            document.getElementById('effects-trace-2').innerHTML = `<strong>Bước 2:</strong> Đánh giá vế phải <code>b++ == 10</code> ...`;
+            document.getElementById('effects-trace-result').innerHTML = `<strong>Kết quả:</strong> Trạng thái sau cùng...`;
+        }
+
+        // --- 9. CONCURRENCY & SCHEDULER SIMULATION ---
+        let concurrencyTimeout = null;
+
+        function runConcurrencySim(mode) {
+            resetConcurrencySim();
+            
+            const ta = document.getElementById('timeline-task-a');
+            const ib = document.getElementById('timeline-isr-b');
+            const valEl = document.getElementById('shared-var-result');
+            const statusEl = document.getElementById('concurrency-status');
+            
+            valEl.innerText = '0';
+            valEl.className = 'shared-var-val';
+            statusEl.innerText = "Bắt đầu thực thi...";
+            
+            if (mode === 'none') {
+                statusEl.innerText = "Task A bắt đầu, đọc Counter = 0. Bị ngắt (Preemption) bởi ISR B!";
+                ta.innerHTML = `<div class="thread-segment running" style="left: 0%; width: 40%;"></div>`;
+                
+                concurrencyTimeout = setTimeout(() => {
+                    ib.innerHTML = `<div class="thread-segment running" style="left: 40%; width: 30%;"></div>`;
+                    ta.innerHTML += `<div class="thread-segment preempted" style="left: 40%; width: 30%;"></div>`;
+                    statusEl.innerText = "ISR B chạy, tăng Counter lên 1 (0 + 1 = 1) và ghi vào RAM. Vòng ngắt kết thúc.";
+                    
+                    setTimeout(() => {
+                        ta.innerHTML += `<div class="thread-segment running" style="left: 70%; width: 30%;"></div>`;
+                        ib.innerHTML += `<div class="thread-segment waiting" style="left: 70%; width: 30%;"></div>`;
+                        
+                        valEl.innerText = '1';
+                        valEl.className = 'shared-var-val error-val';
+                        statusEl.innerText = "LỖI RACE CONDITION: Task A tiếp tục xử lý và ghi đè giá trị cũ (1) lên RAM, làm mất lượt tăng của ISR B!";
+                        statusEl.style.color = 'var(--danger)';
+                    }, 1200);
+                }, 1000);
+            } 
+            else if (mode === 'suspend') {
+                statusEl.innerText = "Task A gọi SuspendAllInterrupts(). Vô hiệu hóa ngắt ISR B.";
+                ta.innerHTML = `<div class="thread-segment running" style="left: 0%; width: 70%;"></div>`;
+                ib.innerHTML = `<div class="thread-segment waiting" style="left: 0%; width: 70%;"></div>`;
+                
+                concurrencyTimeout = setTimeout(() => {
+                    statusEl.innerText = "Task A hoàn tất xử lý (+1), gọi ResumeAllInterrupts().";
+                    
+                    setTimeout(() => {
+                        ta.innerHTML += `<div class="thread-segment waiting" style="left: 70%; width: 30%;"></div>`;
+                        ib.innerHTML = `<div class="thread-segment waiting" style="left: 0%; width: 70%;"></div>` + 
+                                       `<div class="thread-segment running" style="left: 70%; width: 30%;"></div>`;
+                        
+                        valEl.innerText = '2';
+                        statusEl.innerText = "KẾT QUẢ AN TOÀN: Các tác vụ hoàn thành đúng thứ tự, SharedCounter = 2.";
+                        statusEl.style.color = 'var(--success)';
+                    }, 1200);
+                }, 1000);
+            }
+            else if (mode === 'resource') {
+                statusEl.innerText = "Task A gọi GetResource(Lock). ISR B (ưu tiên cao) yêu cầu tài nguyên này...";
+                ta.innerHTML = `<div class="thread-segment running" style="left: 0%; width: 30%;"></div>`;
+                
+                concurrencyTimeout = setTimeout(() => {
+                    statusEl.innerText = "Hệ điều hành nâng ưu tiên Task A bằng trần ưu tiên (Priority Ceiling) để tránh Priority Inversion.";
+                    ta.innerHTML += `<div class="thread-segment running" style="left: 30%; width: 40%;"></div>`;
+                    ib.innerHTML = `<div class="thread-segment waiting" style="left: 30%; width: 40%;"></div>`;
+                    
+                    setTimeout(() => {
+                        statusEl.innerText = "Task A hoàn thành, gọi ReleaseResource(). Trả quyền chạy cho ISR B.";
+                        ta.innerHTML += `<div class="thread-segment waiting" style="left: 70%; width: 30%;"></div>`;
+                        ib.innerHTML = `<div class="thread-segment waiting" style="left: 0%; width: 70%;"></div>` + 
+                                       `<div class="thread-segment running" style="left: 70%; width: 30%;"></div>`;
+                        
+                        valEl.innerText = '2';
+                        statusEl.innerText = "KẾT QUẢ AN TOÀN: Lock & Ceiling Protocol loại bỏ xung đột và bế tắc. SharedCounter = 2.";
+                        statusEl.style.color = 'var(--success)';
+                    }, 1200);
+                }, 1000);
+            }
+        }
+
+        // --- C MEMORY SEGMENTS EXPLORER ---
+        const segmentDescriptions = {
+            'rodata': {
+                title: 'Phân vùng .rodata (Read-Only Data)',
+                desc: 'Chứa các hằng số (như <code>const int max_speed = 120;</code>) và các hằng chuỗi. Dữ liệu tại đây chỉ có thể đọc và nằm cố định trên ROM/Flash, giúp bảo vệ tính toàn vẹn dữ liệu và tiết kiệm RAM.'
+            },
+            'bss': {
+                title: 'Phân vùng .bss (Block Started by Symbol)',
+                desc: 'Chứa các biến toàn cục và biến static chưa khởi tạo (như <code>int current_speed;</code>). Khi khởi động vi điều khiển, chương trình startup (thường là <code>startup.s</code>) sẽ xóa sạch vùng nhớ này về 0 trên RAM trước khi nhảy vào hàm <code>main()</code>.'
+            },
+            'data': {
+                title: 'Phân vùng .data (Initialized Data)',
+                desc: 'Chứa các biến toàn cục và biến static đã khởi tạo giá trị khác 0 (như <code>static int error_count = 5;</code>). Giá trị khởi tạo được lưu trong ROM/Flash và được code startup chép sang RAM trong pha khởi tạo hệ thống.'
+            },
+            'stack': {
+                title: 'Vùng nhớ STACK (Ngăn xếp)',
+                desc: 'Chứa các biến cục bộ (như <code>temp_data</code>) và tham số truyền vào hàm (như <code>input_msg</code>). Việc phân bổ và thu hồi Stack được quản lý tự động bởi CPU thông qua thanh ghi Stack Pointer (SP), có tốc độ xử lý nhanh nhất.'
+            },
+            'text': {
+                title: 'Phân vùng .text (Code Segment & String Literals)',
+                desc: 'Chứa mã máy (binary code) thực thi của chương trình và các hằng chuỗi tĩnh (ví dụ: chuỗi literal <code>"CAN_OK"</code>). Phân vùng này nằm trên ROM/Flash và chỉ cho phép đọc để tránh việc mã lệnh bị ghi đè ngẫu nhiên.'
+            },
+            'heap': {
+                title: 'Vùng nhớ HEAP (Cấp phát động)',
+                desc: 'Được sử dụng cho các vùng nhớ cấp phát động runtime qua hàm <code>malloc()</code>/<code>free()</code> (ví dụ: con trỏ <code>dynamic_buf</code> trỏ đến). Do rủi ro phân mảnh và thời gian thực thi không xác định, vùng nhớ này BỊ CẤM trong lập trình C Automotive (MISRA C).'
+            }
+        };
+
+        function initMemorySegmentsSim() {
+            const tokens = document.querySelectorAll('#sim-memory-segments .interactive-token');
+            const descTitle = document.getElementById('seg-desc-title');
+            const descBody = document.getElementById('seg-desc-body');
+            const blocks = document.querySelectorAll('#sim-memory-segments .segment-block');
+
+            tokens.forEach(token => {
+                const triggerUpdate = () => {
+                    const segment = token.getAttribute('data-segment');
+                    const info = segmentDescriptions[segment];
+
+                    tokens.forEach(t => t.classList.remove('active'));
+                    blocks.forEach(b => b.classList.remove('active'));
+
+                    token.classList.add('active');
+
+                    const targetBlock = document.getElementById(`seg-${segment}`);
+                    if (targetBlock) {
+                        targetBlock.classList.add('active');
+                    }
+
+                    if (info) {
+                        descTitle.innerHTML = info.title;
+                        descBody.innerHTML = info.desc;
+                    }
+                };
+
+                token.addEventListener('click', triggerUpdate);
+                token.addEventListener('mouseenter', triggerUpdate);
+            });
+        }
+
+        // Initialize Simulators on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            initMemorySegmentsSim();
+            updateMemVisuals();
+            renderRegisterGrid();
+            renderStructDesigner();
+            resetSideEffectsSim();
+            resetConcurrencySim();
+        });
+
+        function resetConcurrencySim() {
+            if (concurrencyTimeout) clearTimeout(concurrencyTimeout);
+            document.getElementById('timeline-task-a').innerHTML = '';
+            document.getElementById('timeline-isr-b').innerHTML = '';
+            document.getElementById('shared-var-result').innerText = '0';
+            document.getElementById('shared-var-result').className = 'shared-var-val';
+            document.getElementById('concurrency-status').innerText = 'Hãy chọn một chế độ để bắt đầu chạy mô phỏng.';
+            document.getElementById('concurrency-status').style.color = 'var(--text-secondary)';
+        }
+    </script>
+</body>
+</html>

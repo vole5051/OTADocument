@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cẩm nang & Mô phỏng: Flash Bootloader (FBL) & Over-The-Air (OTA)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Core Design System Tokens */
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #141b2d;
+            --bg-card: rgba(20, 27, 45, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            --color-blue: #38bdf8;
+            --color-blue-glow: rgba(56, 189, 248, 0.15);
+            --color-green: #34d399;
+            --color-green-glow: rgba(52, 211, 153, 0.15);
+            --color-orange: #fb923c;
+            --color-orange-glow: rgba(251, 146, 60, 0.15);
+            --color-red: #f87171;
+            --color-red-glow: rgba(248, 113, 113, 0.15);
+            --color-purple: #c084fc;
+            
+            --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            
+            --sidebar-width: 320px;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        /* Navigation Sidebar */
+        aside {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 2.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .logo-area {
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-area h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-area p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex-grow: 1;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.04);
+            border-left-color: var(--color-blue);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .link-back {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-blue);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        .link-back:hover {
+            color: var(--color-purple);
+            transform: translateX(-3px);
+        }
+
+        /* Main Content Container */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            min-height: 100vh;
+            padding: 3rem 4rem;
+            max-width: calc(100% - var(--sidebar-width));
+        }
+
+        /* Documentation Content Elements */
+        section {
+            margin-bottom: 5rem;
+            scroll-margin-top: 3rem;
+        }
+
+        h1.main-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 40%, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2.section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--color-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h3.subsection-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 1.8rem 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.2rem;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Custom Alert styling (Github-style) */
+        .alert {
+            background-color: var(--color-blue-glow);
+            border-left: 4px solid var(--color-blue);
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .alert-content p {
+            margin-bottom: 0;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* Code Block formatting */
+        pre {
+            background-color: #080c14;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: #e5e7eb;
+        }
+
+        p code, li code {
+            background-color: rgba(255, 255, 255, 0.06);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: var(--color-purple);
+            font-size: 0.9rem;
+        }
+
+        /* ASCII Memory Map container */
+        .ascii-map {
+            font-family: var(--font-mono);
+            background-color: #06090f;
+            border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+            color: #60a5fa;
+        }
+
+        /* Comparison Table formatting */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.03);
+            font-weight: 600;
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.01);
+            color: var(--text-primary);
+        }
+
+        /* Advanced Simulation Interface Layout styles */
+        .sim-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2.5rem 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sim-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--color-blue), var(--color-purple));
+        }
+
+        .sim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sim-badge {
+            background-color: var(--color-blue-glow);
+            color: var(--color-blue);
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .sim-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Universal simulation controls and buttons */
+        .btn {
+            background-color: rgba(255,255,255,0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.88rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background-color: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .btn-primary {
+            background-color: var(--color-blue);
+            color: #000;
+            border-color: var(--color-blue);
+        }
+
+        .btn-primary:hover {
+            background-color: #7dd3fc;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-danger {
+            background-color: rgba(248, 113, 113, 0.1);
+            color: var(--color-red);
+            border-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--color-red);
+            color: #000;
+            border-color: var(--color-red);
+            box-shadow: 0 0 15px rgba(248, 113, 113, 0.4);
+        }
+
+        .btn-warning {
+            background-color: rgba(251, 146, 60, 0.1);
+            color: var(--color-orange);
+            border-color: rgba(251, 146, 60, 0.2);
+        }
+
+        .btn-warning:hover {
+            background-color: var(--color-orange);
+            color: #000;
+            border-color: var(--color-orange);
+            box-shadow: 0 0 15px rgba(251, 146, 60, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background-color: rgba(255,255,255,0.02) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+            box-shadow: none !important;
+        }
+
+        /* ---------------------------------------------------- */
+        /* SIMULATOR 1 SPECIFIC STYLES                          */
+        /* ---------------------------------------------------- */
+        .uds-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr 300px;
+            gap: 1.5rem;
+            height: 380px;
+        }
+
+        .dashboard-panel, .uds-console-panel, .uds-view-panel {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding-bottom: 0.4rem;
+        }
+
+        /* ECU State display rows */
+        .state-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .state-label {
+            color: var(--text-secondary);
+        }
+
+        .state-val {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            background-color: rgba(255,255,255,0.04);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .val-blue { color: var(--color-blue); }
+        .val-green { color: var(--color-green); }
+        .val-orange { color: var(--color-orange); }
+        .val-red { color: var(--color-red); }
+
+        /* UDS Console text area */
+        .console-logs {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            background-color: #05080f;
+            border-radius: 6px;
+            padding: 0.6rem;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .log-line {
+            line-height: 1.3;
+        }
+
+        .log-tx { color: #facc15; }
+        .log-rx { color: #60a5fa; }
+        .log-info { color: var(--text-muted); }
+        .log-err { color: var(--color-red); }
+        .log-success { color: var(--color-green); }
+
+        /* Active flashing sequence layout */
+        .seq-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .seq-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            transition: var(--transition-smooth);
+            position: relative;
+            background-color: rgba(255,255,255,0.01);
+            border: 1px solid transparent;
+        }
+
+        .seq-step.active {
+            background-color: var(--color-blue-glow);
+            border-color: rgba(56, 189, 248, 0.2);
+            transform: scale(1.02);
+        }
+
+        .seq-step.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--color-blue);
+            border-radius: 6px 0 0 6px;
+        }
+
+        .seq-step.passed {
+            opacity: 0.5;
+        }
+
+        .seq-num {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 0.8rem;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .active .seq-num {
+            background-color: var(--color-blue);
+            color: #000;
+        }
+
+        .seq-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .active .seq-text {
+            color: var(--text-primary);
+        }
+
+        .uds-controls {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .uds-main-btns {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .uds-fail-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Flashing progress bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255,255,255,0.06);
+            border-radius: 3px;
+            margin-top: 1rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--color-blue), var(--color-green));
+            transition: width 0.1s linear;
+        }
+
+        /* ---------------------------------------------------- */
+        /* SIMULATOR 2 SPECIFIC STYLES                          */
+        /* ---------------------------------------------------- */
+        .db-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr 240px;
+            gap: 1.5rem;
+            height: 400px;
+        }
+
+        .db-panel-left, .db-panel-right {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flash-visualization {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+        }
+
+        .bank-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 42%;
+            position: relative;
+        }
+
+        .bank-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            color: var(--text-primary);
+        }
+
+        .bank-title span {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .bank-box {
+            width: 100%;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column-reverse;
+            padding: 4px;
+            gap: 2px;
+            height: 250px;
+            background-color: rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .bank-box.active-bank {
+            border-color: var(--color-blue);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+
+        .bank-box.active-bank::after {
+            content: 'ACTIVE PC';
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            background-color: var(--color-blue);
+            color: #000;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .bank-sector {
+            height: 10%;
+            border-radius: 4px;
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.02);
+            transition: var(--transition-smooth);
+        }
+
+        .sector-v1 {
+            background-color: var(--color-blue-glow) !important;
+            border-color: rgba(56, 189, 248, 0.4) !important;
+        }
+
+        .sector-v2 {
+            background-color: var(--color-green-glow) !important;
+            border-color: rgba(52, 211, 153, 0.4) !important;
+        }
+
+        .sector-erased {
+            background-color: rgba(255, 255, 255, 0.01) !important;
+            border-color: rgba(255,255,255,0.03) !important;
+        }
+
+        .sector-writing {
+            background-color: var(--color-orange-glow) !important;
+            border-color: rgba(251, 146, 60, 0.4) !important;
+            animation: pulse-sec 0.6s infinite alternate;
+        }
+
+        @keyframes pulse-sec {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+
+        /* Dual bank animation elements */
+        .car-anim-track {
+            position: absolute;
+            bottom: 12px;
+            left: 5%;
+            width: 90%;
+            height: 4px;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            display: none;
+        }
+
+        .car-sprite {
+            position: absolute;
+            top: -12px;
+            left: 0%;
+            font-size: 1.2rem;
+            transform: scaleX(-1);
+            animation: drive-car 5s infinite linear;
+        }
+
+        @keyframes drive-car {
+            0% { left: 0%; }
+            100% { left: 90%; }
+        }
+
+        .db-status-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.8rem;
+            flex-grow: 1;
+            padding: 0.5rem;
+            background-color: rgba(0,0,0,0.15);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.02);
+            overflow-y: auto;
+        }
+
+        /* ---------------------------------------------------- */
+        /* SIMULATOR 3 SPECIFIC STYLES                          */
+        /* ---------------------------------------------------- */
+        .tp-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 240px;
+            gap: 1.5rem;
+            height: 380px;
+        }
+
+        .slider-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .slider-label span:last-child {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            color: var(--color-blue);
+        }
+
+        .input-range {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .input-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--color-blue);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+            transition: var(--transition-smooth);
+        }
+
+        .input-range::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-group input {
+            cursor: pointer;
+            accent-color: var(--color-blue);
+        }
+
+        /* CANTP Flow Animation Area */
+        .anim-canvas-area {
+            background-color: #04070e;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1rem;
+        }
+
+        .nodes-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            z-index: 5;
+            position: relative;
+        }
+
+        .node-box {
+            background: linear-gradient(135deg, var(--bg-secondary), rgba(30, 41, 59, 0.8));
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.4rem 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .node-tester {
+            border-color: var(--color-purple);
+            box-shadow: 0 0 10px rgba(192, 132, 252, 0.15);
+        }
+
+        .node-ecu {
+            border-color: var(--color-blue);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+        }
+
+        .anim-stage {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+        }
+
+        /* Animated signal particles */
+        .pkt-bubble {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 8px;
+            font-weight: bold;
+            color: #000;
+            box-shadow: 0 0 10px rgba(255,255,255,0.4);
+            z-index: 10;
+        }
+
+        .pkt-bubble.pkt-ff {
+            background-color: var(--color-purple);
+            box-shadow: 0 0 10px var(--color-purple);
+        }
+
+        .pkt-bubble.pkt-fc {
+            background-color: var(--color-orange);
+            box-shadow: 0 0 10px var(--color-orange);
+        }
+
+        .pkt-bubble.pkt-cf {
+            background-color: var(--color-blue);
+            box-shadow: 0 0 10px var(--color-blue);
+        }
+
+        /* CPU Load meter */
+        .ecu-load-meter {
+            margin-top: 1rem;
+        }
+
+        .load-bar-bg {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255,255,255,0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .load-bar-fill {
+            height: 100%;
+            width: 15%;
+            background-color: var(--color-green);
+            transition: var(--transition-smooth);
+        }
+
+        .load-bar-fill.high-load {
+            background-color: var(--color-red);
+            box-shadow: 0 0 8px var(--color-red);
+        }
+
+        /* Responsive adaptations */
+        @media (max-width: 1200px) {
+            body {
+                flex-direction: column;
+            }
+            aside {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 1.5rem;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            main {
+                margin-left: 0;
+                max-width: 100%;
+                padding: 2rem;
+            }
+            .uds-grid, .db-grid, .tp-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .uds-grid {
+                height: auto;
+            }
+            .uds-console-panel, .flash-visualization, .anim-canvas-area {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside>
+        <div class="logo-area">
+            <h2>OTA & FBL</h2>
+            <p>Học Tập & Mô Phỏng Tương Tác</p>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="#introduction" class="active">1. Tổng quan OTA & FBL</a></li>
+            <li><a href="#architecture">2. Kiến trúc Flash Bootloader</a></li>
+            <li><a href="#uds-sequence">3. Quy trình nạp qua UDS</a></li>
+            <li><a href="#security-safety">4. Bảo mật & An toàn ECU</a></li>
+            <li><a href="#ota-update">5. Kiến trúc cập nhật OTA</a></li>
+            <li><a href="#autosar-modules">6. Các Module AUTOSAR</a></li>
+            <li><a href="#high-speed">7. DoIP & Tối ưu hóa CANTP</a></li>
+            <li><a href="#comparison">8. Bảng So Sánh Flashing</a></li>
+            <li><a href="#qa-section">9. Câu hỏi phỏng vấn chọn lọc</a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="file:///e:/Embeddelearning/LearningDoc/Document/cam_nang_on_tap_c_automotive_middle_deep_analysis.html" class="link-back">
+                &larr; Cẩm Nang C Automotive
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main>
+        
+        <!-- TITLE -->
+        <h1 class="main-title">FLASH BOOTLOADER & OVER-THE-AIR UPDATE IN AUTOMOTIVE</h1>
+        <p style="font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 3rem;">
+            Tài liệu số hóa cao cấp tích hợp các mô hình mô phỏng tương tác giúp thấu hiểu cơ chế chẩn đoán UDS, nạp phần mềm an toàn, và cập nhật vi sai OTA trên các dòng vi điều khiển Automotive hiện đại.
+        </p>
+
+        <!-- SECTION 1 -->
+        <section id="introduction">
+            <h2 class="section-title">1. Tổng Quan & Mối Quan Hệ Giữa FBL Và OTA</h2>
+            <p>
+                Trong kỷ nguyên xe thông minh định nghĩa bằng phần mềm (Software-Defined Vehicles - SDV), khả năng cập nhật chương trình cho các hộp điều khiển điện tử (ECU) là bắt buộc. Có hai phương thức chính để nạp/cập nhật phần mềm:
+            </p>
+            <ul>
+                <li><strong>FBL (Flash Bootloader):</strong> Là một chương trình chạy độc lập, nằm tại vùng nhớ an toàn của ECU. FBL chịu trách nhiệm giao tiếp vật lý (CAN, LIN, Ethernet...) và ghi dữ liệu nhị phân mới vào bộ nhớ Flash của ECU thông qua giao thức chẩn đoán (thường là UDS).</li>
+                <li><strong>OTA (Over-The-Air):</strong> Là toàn bộ hạ tầng và quy trình phân phối bản cập nhật từ máy chủ đám mây (Cloud) xuống xe qua sóng di động/Wi-Fi mà không cần kết nối vật lý bằng cáp chẩn đoán.</li>
+            </ul>
+
+            <div class="alert">
+                <div class="alert-title">Mối Quan Hệ Cốt Lõi</div>
+                <div class="alert-content">
+                    <p>OTA không thay thế FBL. Thực chất, OTA là giải pháp cấp cao (System-level) để vận chuyển và quản lý file firmware, còn FBL là giải pháp cấp thấp (ECU-level) thực thi hành động "ghi" firmware đó vào ô nhớ Flash. Trong một chu trình OTA, Gateway/TCU tải file về và đóng vai trò như một Tester giả lập gửi các lệnh UDS xuống FBL của Target ECU để thực hiện việc flash.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2 -->
+        <section id="architecture">
+            <h2 class="section-title">2. Kiến Trúc Chi Tiết Flash Bootloader (FBL)</h2>
+            
+            <h3 class="subsection-title">2.1. Sơ đồ phân bổ bộ nhớ (Flash Memory Map)</h3>
+            <p>Một ECU thông thường chia bộ nhớ Flash thành các phân vùng chính như Reset Vector, Boot Manager, Flash Bootloader, Boot Info lưu trữ các Flag trạng thái, và vùng nhớ chứa mã nguồn Application chính.</p>
+            
+            <!-- Mermaid Diagram for Memory Map -->
+            <div style="margin: 1.5rem 0; background: #080c14; border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem; display: flex; justify-content: center; width: 100%;">
+                <pre class="mermaid" style="background: transparent; border: none; margin: 0; padding: 0; width: 100%; max-width: 900px; font-size: 16px;">
+                %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1e293b', 'edgeLabelBackground':'#0f172a', 'tertiaryColor': '#0f172a', 'fontSize': '14px'}}}%%
+                graph TD
+                    subgraph Flash_Memory [BỘ NHỚ FLASH VẬT LÝ]
+                        A["Reset Vector & Startup Code<br/>(0x0000_0000)"] --> B["Boot Manager<br/>(Kiểm tra App Valid / Jump Decider)"]
+                        B --> C["Flash Bootloader (FBL)<br/>(Xử lý UDS, Quản lý ghi Flash)"]
+                        C --> D["Boot Info / NVRAM<br/>(Cờ Trạng Thái, Boot Counter)"]
+                        D --> E["Application Vector Table<br/>(0x0001_0000)"]
+                        E --> F["Active Application Code<br/>(Chương trình chạy chính)"]
+                        F --> G["Calibration Data<br/>(Bản đồ động cơ, Cấu hình xe)"]
+                    end
+                    subgraph RAM_Memory [BỘ NHỚ RAM]
+                        H["Executable RAM<br/>(Chạy Dynamic Flash Driver khi nạp)"]
+                    end
+                    C -.->|Tải Driver động qua UDS $34/$36| H
+                </pre>
+            </div>
+            
+            <!-- Nhúng thư viện Mermaid.js vào trang nếu chưa có -->
+            <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+            <script>
+                mermaid.initialize({
+                    startOnLoad: true,
+                    flowchart: {
+                        useWidth: true,
+                        htmlLabels: true
+                    }
+                });
+            </script>
+
+            <h3 class="subsection-title">2.2. Tiến trình khởi động (Startup Sequence)</h3>
+            <p>
+                Mỗi khi ECU reset, MCU bắt đầu thực thi code tại Reset Vector thuộc vùng của Bootloader. Boot Manager kiểm tra tính hợp lệ của Application thông qua cờ <code>App Valid Flag</code> trong NVRAM, cờ yêu cầu <code>Boot Request Flag</code> được set bởi Application trước khi reset và kiểm tra tính toàn vẹn (Integrity Check) thông qua mã CRC hoặc chữ ký số. Nếu mọi điều kiện hợp lệ, hệ thống sẽ thực hiện lệnh nhảy vector trỏ PC sang vùng Application chính để thực thi.
+            </p>
+
+            <h3 class="subsection-title">2.3. Khái niệm Flash Driver nạp động (Dynamic Flash Driver)</h3>
+            <p>
+                Flash Driver (mã nguồn ghi/xóa bộ nhớ Flash vật lý) thường không được ghi chết trong ROM của Bootloader vì hai lý do chính:
+            </p>
+            <ol>
+                <li><strong>An toàn phần cứng (Safety):</strong> Tránh lỗi tràn ngăn xếp (Stack Overflow) hoặc nhiễu điện ngoài ý muốn làm nhảy Program Counter vào các hàm ghi xóa bộ nhớ, tự động phá hỏng mã nguồn ứng dụng đang chạy.</li>
+                <li><strong>Tính linh hoạt:</strong> Cho phép dễ dàng sửa đổi thuật toán ghi xóa (Flash algorithm) cho các lô linh kiện bán dẫn mới mà không cần nạp lại toàn bộ FBL.</li>
+            </ol>
+            <p>
+                <strong>Cơ chế:</strong> Khi lập trình, Tester truyền Flash Driver xuống RAM của ECU thông qua dịch vụ UDS <code>$34</code> và <code>$36</code>. FBL sẽ lưu trên vùng nhớ RAM có thuộc tính thực thi (Executable RAM), xác thực chữ ký của Driver này, và thực thi thông qua con trỏ hàm (Function Pointer). Driver này sẽ bị giải phóng hoàn toàn sau khi ECU Reset.
+            </p>
+        </section>
+
+        <!-- SECTION 3 -->
+        <section id="uds-sequence">
+            <h2 class="section-title">3. Quy Trình Nạp Phần Mềm Qua UDS (ISO 14229-1)</h2>
+            <p>
+                Tiêu chuẩn chẩn đoán UDS định nghĩa một chuỗi quy trình lập trình (Programming Sequence) vô cùng nghiêm ngặt gồm 3 giai đoạn chính:
+            </p>
+            <ul>
+                <li><strong>Pre-Programming Phase:</strong> Thực hiện chuyển đổi Session sang Extended (<code>$10 03</code>), tắt ghi mã lỗi DTC (<code>$85 02</code>), dừng các truyền thông không liên quan (<code>$28 03</code>) và chuyển sang Programming Session (<code>$10 02</code>) để Reset chuyển hướng ECU sang chạy FBL.</li>
+                <li><strong>Programming Phase:</strong> Thực thi hoàn toàn trong FBL. Xác thực quyền bảo mật chẩn đoán (<code>$27 01/02</code>), tải Flash Driver vào RAM, thực hiện xóa phân vùng nhớ cũ (<code>$31 01 FF 00</code>), khai báo thông số nạp (<code>$34</code>), truyền các khối dữ liệu Application mới (<code>$36</code>), kết thúc truyền dữ liệu (<code>$37</code>) và chạy hàm kiểm tra tính toàn vẹn (<code>$31 01 F0 01</code>).</li>
+                <li><strong>Post-Programming Phase:</strong> Reset ECU (<code>$11 01</code>) để khởi chạy Application mới, mở lại giao tiếp ứng dụng (<code>$28 00</code>), bật lại ghi lỗi DTC (<code>$85 01</code>) và đưa ECU về trạng thái mặc định (<code>$10 01</code>).</li>
+            </ul>
+
+            <!-- SIMULATOR 1: UDS FLASHING -->
+            <div class="sim-container" id="sim-uds">
+                <div class="sim-header">
+                    <div class="sim-title">Mô Phỏng 1: Trực Quan Hóa Lập Trình UDS (UDS Flashing Sequence)</div>
+                    <span class="sim-badge">Interactive Simulation</span>
+                </div>
+                
+                <div class="uds-grid">
+                    <!-- Dashboard Panel -->
+                    <div class="dashboard-panel">
+                        <div class="panel-title">ECU Status Dashboard</div>
+                        <div class="state-row">
+                            <span class="state-label">ECU Mode:</span>
+                            <span class="state-val val-blue" id="uds-ecu-mode">APP MODE</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Security:</span>
+                            <span class="state-val val-red" id="uds-security">LOCKED</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Flash Driver:</span>
+                            <span class="state-val val-muted" id="uds-flash-drv">NOT IN RAM</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Flash Memory:</span>
+                            <span class="state-val" id="uds-mem-state">ORIGINAL</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">App Valid Flag:</span>
+                            <span class="state-val val-green" id="uds-app-valid">TRUE</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Boot Request Flag:</span>
+                            <span class="state-val" id="uds-boot-req">FALSE</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Steps Panel -->
+                    <div class="uds-view-panel">
+                        <div class="panel-title">Flashing Sequence Steps</div>
+                        <div class="seq-list">
+                            <div class="seq-step" id="step-0"><span class="seq-num">1</span><span class="seq-text">$10 03 Extended Session & $85, $28 (Pre-Programming)</span></div>
+                            <div class="seq-step" id="step-1"><span class="seq-num">2</span><span class="seq-text">$10 02 Switch Programming Session & Reset to FBL</span></div>
+                            <div class="seq-step" id="step-2"><span class="seq-num">3</span><span class="seq-text">$27 Security Access (Seed & Key Verification)</span></div>
+                            <div class="seq-step" id="step-3"><span class="seq-num">4</span><span class="seq-text">$34 / $36 Load Flash Driver to RAM</span></div>
+                            <div class="seq-step" id="step-4"><span class="seq-num">5</span><span class="seq-text">$31 01 FF 00 Erase Active Flash Memory</span></div>
+                            <div class="seq-step" id="step-5"><span class="seq-num">6</span><span class="seq-text">$34 & $36 Transfer Block-by-Block App data</span></div>
+                            <div class="seq-step" id="step-6"><span class="seq-num">7</span><span class="seq-text">$31 01 F0 01 Verify Integrity & Digital Signature</span></div>
+                            <div class="seq-step" id="step-7"><span class="seq-num">8</span><span class="seq-text">$11 01 ECU Reset & Jump to Application</span></div>
+                        </div>
+                        <div class="progress-container" id="uds-progress-cont">
+                            <div class="progress-bar" id="uds-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Console Logs Panel -->
+                    <div class="uds-console-panel">
+                        <div class="panel-title">Diagnostic CAN-FD Console</div>
+                        <div class="console-logs" id="uds-console-logs">
+                            <div class="log-line log-info">Console initialized. Ready for UDS flashing...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="uds-controls">
+                    <div class="uds-main-btns">
+                        <button class="btn btn-primary" id="btn-uds-play">Tự Động Chạy (Auto Play)</button>
+                        <button class="btn" id="btn-uds-next">Chạy Từng Bước (Step)</button>
+                        <button class="btn" id="btn-uds-reset">Reset</button>
+                    </div>
+                    <div class="uds-fail-btns">
+                        <button class="btn btn-danger" id="btn-uds-fail-power" disabled>Gây Sụt Nguồn (Power Drop)</button>
+                        <button class="btn btn-warning" id="btn-uds-fail-sig" disabled>Sai Chữ Ký (Bad Sig)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4 -->
+        <section id="security-safety">
+            <h2 class="section-title">4. Bảo Mật & An Toàn Trong FBL (Safety & Security)</h2>
+            <p>
+                Các vi điều khiển hiện đại yêu cầu thiết kế bảo mật phân lớp chặt chẽ nhằm tránh việc nạp mã độc qua cổng chẩn đoán hoặc can thiệp chip nhớ ngoài.
+            </p>
+            
+            <h3 class="subsection-title">4.1. Sự khác biệt giữa Secure Boot và Secure Flashing</h3>
+            <ul>
+                <li><strong>Secure Flashing (Nạp bảo mật):</strong> Xác thực độ tin cậy của phần mềm mới ngay tại thời điểm truyền nạp. FBL sử dụng khóa công khai (Public Key) lưu trữ trong vùng nhớ an toàn của nó để kiểm tra tính hợp lệ của chữ ký đi kèm tệp nhị phân mới.</li>
+                <li><strong>Secure Boot (Khởi động bảo mật):</strong> Xác thực tính toàn vẹn và nguồn gốc của phần mềm đang lưu trong bộ nhớ Flash của MCU mỗi khi cấp nguồn. Dù tệp nhị phân đã được nạp hợp lệ hay có ai dùng mạch nạp ngoài ghi đè Flash, Secure Boot (chạy bởi HSM) sẽ băm lại vùng nhớ App, đối chiếu chữ ký gốc trước khi chuyển tiếp PC.</li>
+            </ul>
+
+            <h3 class="subsection-title">4.2. Vai trò của HSM (Hardware Security Module) & EVITA</h3>
+            <p>
+                Để tăng tốc các thuật toán mã hóa phức tạp (ECDSA, AES-128, SHA-256) mà không làm nghẹt nhân CPU chính, vi điều khiển Automotive tích hợp sẵn **HSM**. HSM là một nhân CPU bảo mật cô lập hoàn toàn, có khóa phần cứng riêng không thể đọc ra từ core chính. 
+                Tiêu chuẩn **EVITA** định nghĩa ba cấu hình HSM: *Full* (cho Gateway/Telematics cao cấp), *Medium* (cho Domain Controllers), và *Light* (cho các nút phụ như cảm biến).
+            </p>
+        </section>
+
+        <!-- SECTION 5 -->
+        <section id="ota-update">
+            <h2 class="section-title">5. Kiến Trúc Cập Nhật Phần Mềm Từ Xa Over-The-Air (OTA)</h2>
+            <p>
+                Trong hệ thống OTA toàn xe, một ECU trung tâm (OTA Gateway hoặc TCU) sẽ kết nối lên Cloud của hãng qua mạng 4G/5G, tải bản cập nhật, xác thực toàn vẹn và sau đó tiến hành phân phối lập trình cho các ECU đích trong xe qua mạng nội bộ.
+            </p>
+
+            <h3 class="subsection-title">5.1. Các chiến lược cấu trúc bộ nhớ (Memory Update Strategies)</h3>
+            <ul>
+                <li><strong>In-Place Update (Single-Bank):</strong> ECU chỉ có một phân vùng chứa App. FBL sẽ xóa phân vùng này trước khi nạp mới. Nhược điểm: Xe phải dừng hoạt động hoàn toàn (Downtime dài) và rủi ro bị brick rất cao nếu có lỗi nguồn giữa chừng.</li>
+                <li><strong>Dual-Bank Update (A/B Update):</strong> Bộ nhớ được chia làm 2 Bank bằng nhau. CPU chạy App V1.0 từ Bank A, trong khi dữ liệu App V2.0 được tải ngầm và ghi dần vào Bank B (Background download). Khi lái xe đỗ xe an toàn, hệ thống thực hiện hoán đổi địa chỉ nhảy (Swap) và kích hoạt V2.0. Rủi ro downtime gần như bằng không.</li>
+                <li><strong>Delta Update (Cập nhật vi sai):</strong> Gateway chỉ tải xuống một file nén vi sai (Patch file) chứa mã máy khác biệt, sau đó giải nén tạo dựng file hoàn chỉnh trên RAM đệm hoặc Flash phụ, giảm thiểu tối đa lưu lượng băng thông 4G truyền tải.</li>
+            </ul>
+
+            <!-- SIMULATOR 2: DUAL BANK SWAP & ROLLBACK -->
+            <div class="sim-container" id="sim-db">
+                <div class="sim-header">
+                    <div class="sim-title">Mô Phỏng 2: Cơ Chế Dual-Bank (A/B Swap) & Tự Động Phục Hồi (Rollback)</div>
+                    <span class="sim-badge">Interactive Simulation</span>
+                </div>
+
+                <div class="db-grid">
+                    <!-- Left: NVM Variables -->
+                    <div class="db-panel-left">
+                        <div class="panel-title">NVM Variables & Flags</div>
+                        <div class="state-row">
+                            <span class="state-label">Active Bank:</span>
+                            <span class="state-val val-blue" id="db-active-bank">BANK_A</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Bank A App:</span>
+                            <span class="state-val val-blue" id="db-app-a-ver">V1.0 (Stable)</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Bank B App:</span>
+                            <span class="state-val val-muted" id="db-app-b-ver">EMPTY</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">App Stable Flag:</span>
+                            <span class="state-val val-green" id="db-stable-flag">TRUE</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Boot Try Counter:</span>
+                            <span class="state-val" id="db-boot-counter">--</span>
+                        </div>
+                        <div class="db-status-desc" id="db-status-log">
+                            Hộp ECU đang chạy ổn định phiên bản V1.0 tại Bank A. Đợi phát động cập nhật OTA...
+                        </div>
+                    </div>
+
+                    <!-- Center: Visual Flash Graphic -->
+                    <div class="flash-visualization">
+                        <div class="car-anim-track" id="db-car-track">
+                            <span class="car-sprite" id="db-car-sprite">🚗</span>
+                        </div>
+
+                        <!-- Bank A -->
+                        <div class="bank-container">
+                            <div class="bank-title">BANK A <span id="bank-a-lbl">(Active)</span></div>
+                            <div class="bank-box active-bank" id="box-bank-a">
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                                <div class="bank-sector sector-v1"></div>
+                            </div>
+                        </div>
+
+                        <!-- Bank B -->
+                        <div class="bank-container">
+                            <div class="bank-title">BANK B <span id="bank-b-lbl">(Inactive)</span></div>
+                            <div class="bank-box" id="box-bank-b">
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                                <div class="bank-sector"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Actions -->
+                    <div class="db-panel-right">
+                        <div class="panel-title">OTA Trigger Actions</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.8rem; height: 100%; justify-content: center;">
+                            <button class="btn btn-primary" id="btn-db-download">1. Tải Ngầm OTA (Background)</button>
+                            <button class="btn" id="btn-db-swap" disabled>2. Tắt Máy & Swap (Key-Off)</button>
+                            <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0;"></div>
+                            <button class="btn btn-danger" id="btn-db-crash" disabled>Mô Phỏng Crash V2.0</button>
+                            <button class="btn btn-primary" id="btn-db-stable" style="background-color: var(--color-green); color: #000; border-color: var(--color-green)" disabled>Xác Nhận App V2.0 OK</button>
+                            <button class="btn" id="btn-db-reset">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6 -->
+        <section id="autosar-modules">
+            <h2 class="section-title">6. Các Module AUTOSAR Liên Quan Trong Flash Bootloader</h2>
+            <p>
+                Trong kiến trúc chuẩn AUTOSAR Classic, FBL sử dụng một tập hợp rút gọn các module BSW tiêu chuẩn để tiết kiệm diện tích vùng nhớ, nhưng vẫn đảm bảo tính tương thích:
+            </p>
+            <ul>
+                <li><strong>Dcm (Diagnostic Communication Manager):</strong> Xử lý toàn bộ logic tiếp nhận thông điệp chẩn đoán UDS từ bus mạng và chuyển đổi Session.</li>
+                <li><strong>FblM (Flash Bootloader Manager):</strong> Module quản lý vòng đời nạp, kiểm soát luồng di chuyển và trạng thái cờ App Valid.</li>
+                <li><strong>Csm (Crypto Service Manager) & CryIf:</strong> Giao tiếp giữa các thuật toán phần mềm và module HSM phần cứng để thực thi mã hóa an toàn.</li>
+                <li><strong>Fls (Flash Driver - MCAL Layer):</strong> Lớp driver điều khiển ghi xóa ô nhớ trực tiếp. Fls trong FBL thường được load động xuống RAM.</li>
+            </ul>
+
+            <h3 class="subsection-title">6.1. Cấu hình Memory Mapping và Cơ chế Read-While-Write (RWW)</h3>
+            <p>
+                <strong>Chia sẻ mã nguồn & Cấu hình MemMap:</strong> Khi FBL và Application cùng chia sẻ chung tệp mã nguồn của một số module, hệ thống bắt buộc phải cho phép định tuyến ánh xạ các ký hiệu (symbol) biến/hàm vào các phân vùng bộ nhớ khác nhau tùy theo kịch bản build. Việc này được thực hiện thông qua cơ chế file tiêu chuẩn <code>{Mip}_MemMap.h</code> hoặc <code>{componentTypeName}_MemMap.h</code> chứa các chỉ thị <code>#pragma</code> định hướng (ví dụ: phân phối mã vào vùng <code>CODE</code>, <code>CALLOUT_CODE</code>, hoặc vùng RAM tốc độ cao <code>CODE_FAST</code>).
+            </p>
+            <p>
+                Ví dụ ánh xạ vùng nhớ cho constants và code fast thông qua các macro chuẩn hóa:
+            </p>
+            <pre><code>/* Ví dụ cấu hình ánh xạ code và data */
+#define MYMODULE_START_SEC_CONFIG_DATA_16
+#include "MyModule_MemMap.h"
+extern const uint16 MyModule_ConfigParam;
+#define MYMODULE_STOP_SEC_CONFIG_DATA_16
+#include "MyModule_MemMap.h"
+
+#define MYMODULE_START_SEC_CODE_FAST
+#include "MyModule_MemMap.h"
+void MyModule_FastTimerInterrupt(void);
+#define MYMODULE_STOP_SEC_CODE_FAST
+#include "MyModule_MemMap.h"</code></pre>
+            
+            <p>
+                <strong>Cơ chế Multi-core Startup (Master/Satellite EcuM):</strong> Trong hệ thống multi-core, phần cứng ban đầu chỉ khởi động một lõi duy nhất (Master Core/Core 0). Nhân CPU này sẽ chạy qua Bootloader trước rồi kích hoạt **Master EcuM**. Master EcuM chịu trách nhiệm khởi chạy hệ điều hành OS trên core của mình, sau đó đánh thức các core phụ (Satellite Cores) còn lại từ trạng thái Halt. Tiếp theo, các **Satellite EcuM** trên từng core phụ sẽ được khởi động để quản lý vòng đời local và đồng bộ trạng thái chẩn đoán BswM xuyên suốt các phân vùng (partitions) tin cậy.
+            </p>
+            
+            <p>
+                <strong>Đồng bộ hóa Mô phỏng & Code sinh ra (Explicit vs Implicit Receive):</strong> Khi thiết kế mô phỏng trên các môi trường như Simulink, tín hiệu luôn được đệm (buffered) trong một chu kỳ (Time Step). Để code C sinh ra giống hệt với hành vi mô phỏng này, ta sử dụng cơ chế đọc đệm của RTE:
+            </p>
+            <ul>
+                <li><strong>ImplicitReceive:</strong> RTE tự động đệm dữ liệu vào đầu chu kỳ chạy. Giá trị đầu vào luôn không đổi trong suốt một lần thực thi Runnable dù được gọi bao nhiêu lần:
+                    <pre><code>/* ImplicitReceive: Input is read once and stored in local buffered value */
+rtDW.Integrator_DSTATE += 2.0 * Rte_IRead_Runnable_2s_ReceivePort_In2();</code></pre>
+                </li>
+                <li><strong>ExplicitReceive:</strong> Dữ liệu có thể được truy xuất trực tiếp và có khả năng thay đổi ngay giữa chu kỳ. Tuy nhiên, để đảm bảo tính đồng bộ mô phỏng (Simulink matching), code sinh ra thường copy thông qua biến tạm:
+                    <pre><code>/* ExplicitReceive: Buffered read using a temporary variable */
+real_T tmpRead;
+Rte_Read_ReceivePort_In2(&tmpRead);
+/* Dùng tmpRead cho thuật toán để tránh thay đổi giữa chừng */
+rtDW.Integrator_DSTATE += 2.0 * tmpRead;</code></pre>
+                </li>
+            </ul>
+
+            <p>
+                <strong>Cơ chế RWW:</strong> Khi FOTA Manager thực hiện ghi ngầm dữ liệu cập nhật xuống Flash, các driver trừu tượng phải hỗ trợ cơ chế <strong>Read-While-Write (RWW)</strong>. Cơ chế này cho phép CPU vừa đọc/chạy mã ứng dụng tại Bank A chính, vừa thực hiện ghi xóa ô nhớ vật lý trên Bank B phụ, đảm bảo tiến trình ghi ngầm không gây đứng hoặc giật hệ thống điều khiển của xe.
+            </p>
+        </section>
+
+        <!-- SECTION 7 -->
+        <section id="high-speed">
+            <h2 class="section-title">7. Truyền Tải Tốc Độ Cao (DoIP & Tối Ưu Hóa CANTP)</h2>
+            <p>
+                Khi nạp các gói firmware lớn, tốc độ truyền tải trên bus là điểm cốt lõi ảnh hưởng trực tiếp đến thời gian downtime của xe.
+            </p>
+            
+            <h3 class="subsection-title">7.1. Diagnostics Over IP (DoIP - ISO 13400)</h3>
+            <p>
+                DoIP sử dụng giao thức TCP/IP truyền qua cáp mạng **Ethernet** ô tô (100 Mbps hoặc 1 Gbps) thay cho mạng CAN truyền thống (500 Kbps - 5 Mbps). Bằng cách thiết lập cơ chế <code>Routing Activation</code> trên DoIP Edge Node, Tester có thể đẩy file firmware hàng trăm Megabyte chỉ trong vài chục giây thay vì tốn cả tiếng đồng hồ qua CAN.
+            </p>
+
+            <h3 class="subsection-title">7.2. Tối ưu hóa tham số CANTP (ISO 15765-2)</h3>
+            <p>
+                Trong truyền thông CAN, khi gửi gói tin chẩn đoán lớn, Driver lớp truyền tải CANTP sử dụng hai tham số điều khiển dòng để tinh chỉnh tốc độ:
+            </p>
+            <ul>
+                <li><strong>Block Size (BS):</strong> Số khung Consecutive Frames (CF) Tester được phép phát liên tục trước khi phải dừng lại chờ gói Flow Control (FC) từ ECU. <em>Đặt BS = 0</em> cho phép Tester xả dữ liệu liên tục không cần chờ đợi.</li>
+                <li><strong>Separation Time (STmin):</strong> Khoảng nghỉ tối thiểu giữa hai khung CF liên tiếp. <em>STmin càng nhỏ</em> thì tốc độ phát dữ liệu càng cao, nhưng nếu đặt quá nhỏ so với khả năng xử lý ngắt của CPU ECU, sẽ gây lỗi tràn bộ đệm nhận (Rx Buffer Overflow).</li>
+            </ul>
+
+            <!-- SIMULATOR 3: CANTP FLOW CONTROL TUNING -->
+            <div class="sim-container" id="sim-tp">
+                <div class="sim-header">
+                    <div class="sim-title">Mô Phỏng 3: Tinh Chỉnh Tham Số CANTP & Tràn Bộ Đệm ECU (Rx Buffer Overflow)</div>
+                    <span class="sim-badge">Interactive Simulation</span>
+                </div>
+
+                <div class="tp-grid">
+                    <!-- Left: Parameters -->
+                    <div class="db-panel-left">
+                        <div class="panel-title">CANTP Parameters</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span>Block Size (BS):</span>
+                                <span id="tp-bs-val">8</span>
+                            </div>
+                            <input type="range" min="0" max="15" value="8" class="input-range" id="slider-bs">
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span>STmin:</span>
+                                <span id="tp-st-val">10 ms</span>
+                            </div>
+                            <input type="range" min="0" max="20" value="10" class="input-range" id="slider-st">
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-color); margin: 0.8rem 0;"></div>
+
+                        <div class="panel-title">ECU Load Environment</div>
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="chk-ecu-load">
+                            <span>Kích hoạt CPU Load cao (Tác vụ nền bận)</span>
+                        </label>
+
+                        <div class="ecu-load-meter">
+                            <div class="slider-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;">
+                                <span>ECU Rx Buffer State:</span>
+                                <span id="buf-state-lbl">0%</span>
+                            </div>
+                            <div class="load-bar-bg">
+                                <div class="load-bar-fill" id="buf-bar-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Center: Animation Stage -->
+                    <div class="anim-canvas-area">
+                        <div class="nodes-row">
+                            <div class="node-box node-tester">Diagnostic Tester</div>
+                            <div class="node-box node-ecu">Target ECU (FBL)</div>
+                        </div>
+
+                        <div class="anim-stage" id="tp-anim-stage">
+                            <!-- Animated frames bubbles will fly here -->
+                        </div>
+                        
+                        <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.5rem;" id="tp-log-summary">
+                            Cấu hình tham số và bấm Khởi chạy để bắt đầu đo hiệu năng truyền dữ liệu...
+                        </div>
+                    </div>
+
+                    <!-- Right: Statistics -->
+                    <div class="db-panel-right">
+                        <div class="panel-title">Real-Time Statistics</div>
+                        <div class="state-row">
+                            <span class="state-label">Frames Sent:</span>
+                            <span class="state-val" id="tp-stat-frames">0 / 200</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Elapsed Time:</span>
+                            <span class="state-val" id="tp-stat-time">0.00s</span>
+                        </div>
+                        <div class="state-row">
+                            <span class="state-label">Comm Status:</span>
+                            <span class="state-val val-blue" id="tp-stat-status">READY</span>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto;">
+                            <button class="btn btn-primary" id="btn-tp-start">Khởi Chạy (Start)</button>
+                            <button class="btn btn-danger" id="btn-tp-stop" disabled>Dừng (Stop)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 8 -->
+        <section id="comparison">
+            <h2 class="section-title">8. Bảng So Sánh Diagnostics Flashing (Local) vs OTA (Remote)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Đặc tính</th>
+                        <th>Diagnostics Flashing (Local)</th>
+                        <th>Over-The-Air (OTA) Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Kênh truyền dẫn</strong></td>
+                        <td>Kết nối cáp vật lý qua cổng OBD-II</td>
+                        <td>Sóng không dây (Cellular 4G/5G, Wi-Fi)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Giao thức chính</strong></td>
+                        <td>UDS (ISO 14229) trên nền CAN-FD hoặc DoIP</td>
+                        <td>HTTPS, MQTT, WebSockets (Mây xuống Gateway)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tác nhân điều phối</strong></td>
+                        <td>Kỹ thuật viên dùng thiết bị chuyên dụng tại Garage</td>
+                        <td>OTA Master (Gateway/TCU) điều hành tự động trong xe</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Downtime của xe</strong></td>
+                        <td>Dài (phụ thuộc tốc độ bus và thao tác cắm cáp)</td>
+                        <td>Rất ngắn (áp dụng Dual-bank tải ngầm lúc xe chạy)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cơ chế bảo mật</strong></td>
+                        <td>Seed/Key chẩn đoán (UDS <code>$27</code>), Khóa vật lý</td>
+                        <td>Hệ thống PKI, chứng chỉ số, mã hóa E2E, TLS an toàn</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tiêu chuẩn chất lượng</strong></td>
+                        <td>ISO 14229, HIS Bootloader Standard</td>
+                        <td>UNECE WP.29 R156, ISO 24089 (SUMS), ISO 21434</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 9 -->
+        <section id="qa-section">
+            <h2 class="section-title">9. Bộ Câu Hỏi Phỏng Vấn Chắt Lọc (Middle - Advanced Level)</h2>
+            
+            <h3 class="subsection-title">Q1: Tại sao Flash Driver không nên nằm cố định trong ROM của Bootloader mà phải nạp động vào RAM?</h3>
+            <p><strong>Trả lời:</strong> Để đảm bảo tính an toàn phần cứng (Safety) tối đa. Bộ nhớ Flash vật lý được điều khiển thông qua các thanh ghi điều khiển. Nếu mã xóa/ghi Flash nằm sẵn trong ROM, một sự cố nghiêm trọng như lỗi Memory Corruption, tràn Stack làm nhảy con trỏ ngẫu nhiên có thể vô tình kích hoạt driver này xóa sạch code ứng dụng khi đang vận hành. Tải động lên RAM chỉ khi chẩn đoán được xác thực giúp loại trừ hoàn toàn rủi ro này.</p>
+
+            <h3 class="subsection-title">Q2: Trình bày cơ chế chống hạ cấp phiên bản (Anti-Rollback Counter) trong cập nhật OTA?</h3>
+            <p><strong>Trả lời:</strong> Để chống cuộc tấn công replay/downgrade (kẻ tấn công thu nạp bản phần mềm cũ chứa lỗ hổng bảo mật để ghi đè phiên bản mới), ECU lưu một giá trị phiên bản nhỏ nhất cho phép (<code>Local_Min_Version</code>) vào vùng nhớ bảo mật OTP hoặc HSM. Khi FBL kiểm tra chữ ký gói tin mới (<code>$31</code>), nó giải mã metadata của file nạp để đọc <code>Software_Version_Counter</code>. Nếu giá trị này nhỏ hơn <code>Local_Min_Version</code>, FBL sẽ từ chối nạp và trả lỗi chẩn đoán.</p>
+
+            <h3 class="subsection-title">Q3: Tại sao quá trình kiểm tra chữ ký ở cuối Programming Phase lại thường được thiết kế bất đồng bộ (Asynchronous Verification)?</h3>
+            <p><strong>Trả lời:</strong> Việc băm và kiểm tra chữ ký số (ECDSA/RSA) trên toàn bộ vùng Flash lớn của Application bằng phần mềm tốn thời gian rất lâu (vài giây đến vài chục giây). Nếu FBL chạy đồng bộ (blocking), nó sẽ không trả lời bất cứ bản tin duy trì chẩn đoán nào về cho Tester, dẫn đến việc quá thời hạn Session Timeout (<code>P2 Server Time</code>) khiến phiên chẩn đoán bị sập. Thiết kế bất đồng bộ cho phép FBL ra lệnh cho HSM xử lý ngầm, lập tức gửi mã phản hồi tạm thời <strong>NRC $78 (Request Correctly Received - Response Pending)</strong> để xin gia hạn thời gian, và tiếp tục phản hồi Tester Present chờ kết quả xác thực cuối cùng.</p>
+        </section>
+
+    </main>
+
+    <!-- INTERACTIVE SCRIPTS -->
+    <script>
+        // Smooth scroll spy and link active activation
+        document.querySelectorAll('aside a').forEach(elem => {
+            elem.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href');
+                if (targetId.startsWith('#')) {
+                    e.preventDefault();
+                    document.querySelector(targetId).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    document.querySelectorAll('aside a').forEach(a => a.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        // Scroll highlight helper
+        window.addEventListener('scroll', () => {
+            let fromTop = window.scrollY + 100;
+            document.querySelectorAll('section').forEach(sec => {
+                let id = sec.getAttribute('id');
+                let top = sec.offsetTop;
+                let height = sec.offsetHeight;
+                if (fromTop >= top && fromTop < top + height) {
+                    document.querySelectorAll('aside a').forEach(a => {
+                        a.classList.remove('active');
+                        if (a.getAttribute('href') === '#' + id) {
+                            a.classList.add('active');
+                        }
+                    });
+                }
+            });
+        });
+
+        // ----------------------------------------------------
+        // SIMULATOR 1 LOGIC: UDS FLASHING
+        // ----------------------------------------------------
+        const udsModeEl = document.getElementById('uds-ecu-mode');
+        const udsSecurityEl = document.getElementById('uds-security');
+        const udsFlashDrvEl = document.getElementById('uds-flash-drv');
+        const udsMemStateEl = document.getElementById('uds-mem-state');
+        const udsAppValidEl = document.getElementById('uds-app-valid');
+        const udsBootReqEl = document.getElementById('uds-boot-req');
+        const udsConsoleLogsEl = document.getElementById('uds-console-logs');
+        const udsProgressBarEl = document.getElementById('uds-progress-bar');
+        const udsProgressContEl = document.getElementById('uds-progress-cont');
+        
+        const btnUdsPlay = document.getElementById('btn-uds-play');
+        const btnUdsNext = document.getElementById('btn-uds-next');
+        const btnUdsReset = document.getElementById('btn-uds-reset');
+        const btnUdsFailPower = document.getElementById('btn-uds-fail-power');
+        const btnUdsFailSig = document.getElementById('btn-uds-fail-sig');
+
+        let udsStep = -1;
+        let udsTimer = null;
+        let isFlashingFailureInjected = null; // 'power' or 'sig'
+        let udsAutoMode = false;
+
+        function addConsoleLog(text, type = 'info') {
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = `log-line log-${type}`;
+            div.innerText = `[${time}] ${text}`;
+            udsConsoleLogsEl.appendChild(div);
+            udsConsoleLogsEl.scrollTop = udsConsoleLogsEl.scrollHeight;
+        }
+
+        function resetUds() {
+            clearTimeout(udsTimer);
+            udsStep = -1;
+            isFlashingFailureInjected = null;
+            udsAutoMode = false;
+            
+            udsModeEl.innerText = "APP MODE";
+            udsModeEl.className = "state-val val-blue";
+            udsSecurityEl.innerText = "LOCKED";
+            udsSecurityEl.className = "state-val val-red";
+            udsFlashDrvEl.innerText = "NOT IN RAM";
+            udsFlashDrvEl.className = "state-val val-muted";
+            udsMemStateEl.innerText = "ORIGINAL";
+            udsMemStateEl.className = "state-val";
+            udsAppValidEl.innerText = "TRUE";
+            udsAppValidEl.className = "state-val val-green";
+            udsBootReqEl.innerText = "FALSE";
+            udsBootReqEl.className = "state-val";
+            
+            udsProgressContEl.style.display = "none";
+            udsProgressBarEl.style.width = "0%";
+
+            document.querySelectorAll('.seq-step').forEach(el => {
+                el.classList.remove('active', 'passed');
+            });
+
+            btnUdsPlay.disabled = false;
+            btnUdsNext.disabled = false;
+            btnUdsFailPower.disabled = true;
+            btnUdsFailSig.disabled = true;
+
+            udsConsoleLogsEl.innerHTML = "";
+            addConsoleLog("Console initialized. Ready for UDS flashing...", "info");
+        }
+
+        function executeUdsStep() {
+            if (udsStep >= 7) return;
+            udsStep++;
+
+            // Highlight Step
+            document.querySelectorAll('.seq-step').forEach((el, index) => {
+                el.classList.remove('active');
+                if (index < udsStep) el.classList.add('passed');
+                if (index === udsStep) el.classList.add('active');
+            });
+
+            switch (udsStep) {
+                case 0:
+                    addConsoleLog("Tx: 10 03 (DiagnosticSessionControl: Extended)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 50 03 00 32 01 F4 (Positive Response)", "rx");
+                        addConsoleLog("Tx: 85 02 (ControlDTCSetting: Off)", "tx");
+                        addConsoleLog("Rx: C5 02 (DTC Disabled)", "rx");
+                        addConsoleLog("Tx: 28 03 (CommunicationControl: Disable RxTx)", "tx");
+                        addConsoleLog("Rx: 68 03 (App messages suspended on CAN bus)", "rx");
+                        udsModeEl.innerText = "EXTENDED DIAG";
+                        udsModeEl.className = "state-val val-orange";
+                        btnUdsFailPower.disabled = false;
+                        if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                    }, 400);
+                    break;
+
+                case 1:
+                    addConsoleLog("Tx: 10 02 (DiagnosticSessionControl: Programming)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 50 02 00 32 01 F4 (Positive Response, triggering Software Reset)", "rx");
+                        addConsoleLog("ECU undergoes software reset...", "info");
+                        addConsoleLog("MCU booted into FBL Mode. Waiting for diagnostic link...", "info");
+                        udsModeEl.innerText = "FBL MODE";
+                        udsModeEl.className = "state-val val-orange";
+                        udsBootReqEl.innerText = "TRUE";
+                        udsBootReqEl.className = "state-val val-blue";
+                        if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                    }, 400);
+                    break;
+
+                case 2:
+                    addConsoleLog("Tx: 27 01 (SecurityAccess: Request Seed)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 67 01 AB CD EF 12 (Seed generated by HSM)", "rx");
+                        addConsoleLog("Calculating security key using ECDSA...", "info");
+                        addConsoleLog("Tx: 27 02 [ECDSA Signature Key]", "tx");
+                        setTimeout(() => {
+                            addConsoleLog("Rx: 67 02 (Security Level 1 Unlocked)", "rx");
+                            udsSecurityEl.innerText = "UNLOCKED";
+                            udsSecurityEl.className = "state-val val-green";
+                            btnUdsFailSig.disabled = false;
+                            if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                        }, 400);
+                    }, 400);
+                    break;
+
+                case 3:
+                    addConsoleLog("Tx: 34 00 00 (Request Download Flash Driver to RAM)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 74 02 00 (Max block length accepted)", "rx");
+                        addConsoleLog("Tx: 36 01 [Flash Driver Binary Chunks]", "tx");
+                        setTimeout(() => {
+                            addConsoleLog("Rx: 76 01 (Driver chunk stored)", "rx");
+                            addConsoleLog("Tx: 37 (Request Transfer Exit)", "tx");
+                            addConsoleLog("Rx: 77 (Transfer Finished. Flash Driver Loaded successfully)", "rx");
+                            udsFlashDrvEl.innerText = "LOADED IN RAM";
+                            udsFlashDrvEl.className = "state-val val-green";
+                            if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                        }, 400);
+                    }, 400);
+                    break;
+
+                case 4:
+                    addConsoleLog("Tx: 31 01 FF 00 (RoutineControl: Erase Active Memory)", "tx");
+                    udsMemStateEl.innerText = "ERASING...";
+                    udsMemStateEl.className = "state-val val-orange";
+                    
+                    // Critical safety logic: Erasing flash clears App Valid flag
+                    udsAppValidEl.innerText = "FALSE";
+                    udsAppValidEl.className = "state-val val-red";
+                    
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 71 01 FF 00 (Erase memory sector completed successfully)", "rx");
+                        udsMemStateEl.innerText = "ERASED";
+                        udsMemStateEl.className = "state-val val-red";
+                        if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                    }, 1000);
+                    break;
+
+                case 5:
+                    addConsoleLog("Tx: 34 00 00 (Request Download Application Binary)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 74 08 00 (Acknowledge, max buffer block = 2048 bytes)", "rx");
+                        
+                        udsProgressContEl.style.display = "block";
+                        let progress = 0;
+                        let block = 1;
+                        
+                        function sendBlock() {
+                            if (isFlashingFailureInjected === 'power') {
+                                addConsoleLog("FATAL ERROR: Power loss detected in target ECU!", "err");
+                                udsModeEl.innerText = "OFFLINE";
+                                udsModeEl.className = "state-val val-red";
+                                udsFlashDrvEl.innerText = "ERASED";
+                                udsFlashDrvEl.className = "state-val val-red";
+                                addConsoleLog("System shut down. Flashing aborted.", "err");
+                                clearTimeout(udsTimer);
+                                btnUdsPlay.disabled = true;
+                                btnUdsNext.disabled = true;
+                                return;
+                            }
+
+                            if (progress >= 100) {
+                                udsProgressBarEl.style.width = "100%";
+                                addConsoleLog("Tx: 37 (Request Transfer Exit)", "tx");
+                                setTimeout(() => {
+                                    addConsoleLog("Rx: 77 (App transfer completed)", "rx");
+                                    udsMemStateEl.innerText = "WRITTEN";
+                                    udsMemStateEl.className = "state-val val-blue";
+                                    udsProgressContEl.style.display = "none";
+                                    if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1000);
+                                }, 300);
+                            } else {
+                                progress += 20;
+                                udsProgressBarEl.style.width = `${progress}%`;
+                                addConsoleLog(`Tx: 36 0${block} [Block Data Chunk]`, "tx");
+                                setTimeout(() => {
+                                    addConsoleLog(`Rx: 76 0${block} (ACK)`, "rx");
+                                    block++;
+                                    setTimeout(sendBlock, 250);
+                                }, 150);
+                            }
+                        }
+                        sendBlock();
+                    }, 400);
+                    break;
+
+                case 6:
+                    addConsoleLog("Tx: 31 01 F0 01 (RoutineControl: Verify Checksum & Signature)", "tx");
+                    addConsoleLog("FBL HSM core calculating SHA-256 and verifying ECDSA digital signature...", "info");
+                    
+                    // Asynchronous verification: Response Pending
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 78 (NRC 78: Request Correctly Received - Response Pending)", "rx");
+                        
+                        setTimeout(() => {
+                            if (isFlashingFailureInjected === 'sig') {
+                                addConsoleLog("Rx: 71 01 F0 01 02 (Routine Failed: Invalid Digital Signature!)", "err");
+                                addConsoleLog("Authentication Failed. Bootloader maintains App Valid = FALSE", "err");
+                                clearTimeout(udsTimer);
+                                btnUdsPlay.disabled = true;
+                                btnUdsNext.disabled = true;
+                            } else {
+                                addConsoleLog("Rx: 71 01 F0 01 01 (Routine Success: Signature Verified & Checksum OK)", "rx");
+                                udsAppValidEl.innerText = "TRUE";
+                                udsAppValidEl.className = "state-val val-green";
+                                udsMemStateEl.innerText = "VALID APP";
+                                udsMemStateEl.className = "state-val val-green";
+                                if (udsAutoMode) udsTimer = setTimeout(executeUdsStep, 1500);
+                            }
+                        }, 1200);
+                    }, 400);
+                    break;
+
+                case 7:
+                    addConsoleLog("Tx: 11 01 (ECUReset: Hard Reset)", "tx");
+                    setTimeout(() => {
+                        addConsoleLog("Rx: 51 01 (Positive Response, resetting device...)", "rx");
+                        addConsoleLog("ECU Reset initiated.", "info");
+                        
+                        setTimeout(() => {
+                            addConsoleLog("MCU Boot Manager executing startup check...", "info");
+                            addConsoleLog("App Valid is TRUE. Booting Application V2.0...", "success");
+                            udsModeEl.innerText = "APP MODE";
+                            udsModeEl.className = "state-val val-green";
+                            udsSecurityEl.innerText = "LOCKED";
+                            udsSecurityEl.className = "state-val val-red";
+                            udsFlashDrvEl.innerText = "NOT IN RAM";
+                            udsFlashDrvEl.className = "state-val val-muted";
+                            udsBootReqEl.innerText = "FALSE";
+                            udsBootReqEl.className = "state-val";
+                            
+                            addConsoleLog("✓ Flashing session completed successfully!", "success");
+                            btnUdsPlay.disabled = true;
+                            btnUdsNext.disabled = true;
+                        }, 800);
+                    }, 400);
+                    break;
+            }
+        }
+
+        btnUdsPlay.addEventListener('click', () => {
+            udsAutoMode = true;
+            btnUdsPlay.disabled = true;
+            btnUdsNext.disabled = true;
+            executeUdsStep();
+        });
+
+        btnUdsNext.addEventListener('click', () => {
+            udsAutoMode = false;
+            executeUdsStep();
+        });
+
+        btnUdsReset.addEventListener('click', resetUds);
+
+        btnUdsFailPower.addEventListener('click', () => {
+            isFlashingFailureInjected = 'power';
+            addConsoleLog("INJECTED: Hardware power source cut simulation triggered...", "err");
+            btnUdsFailPower.disabled = true;
+        });
+
+        btnUdsFailSig.addEventListener('click', () => {
+            isFlashingFailureInjected = 'sig';
+            addConsoleLog("INJECTED: Faked corrupt firmware update signature...", "err");
+            btnUdsFailSig.disabled = true;
+        });
+
+
+        // ----------------------------------------------------
+        // SIMULATOR 2 LOGIC: DUAL BANK SWAP & ROLLBACK
+        // ----------------------------------------------------
+        const dbActiveBankEl = document.getElementById('db-active-bank');
+        const dbAppAVerEl = document.getElementById('db-app-a-ver');
+        const dbAppBVerEl = document.getElementById('db-app-b-ver');
+        const dbStableFlagEl = document.getElementById('db-stable-flag');
+        const dbBootCounterEl = document.getElementById('db-boot-counter');
+        const dbStatusLogEl = document.getElementById('db-status-log');
+        const dbCarTrackEl = document.getElementById('db-car-track');
+
+        const btnDbDownload = document.getElementById('btn-db-download');
+        const btnDbSwap = document.getElementById('btn-db-swap');
+        const btnDbCrash = document.getElementById('btn-db-crash');
+        const btnDbStable = document.getElementById('btn-db-stable');
+        const btnDbReset = document.getElementById('btn-db-reset');
+
+        const sectorsA = document.querySelectorAll('#box-bank-a .bank-sector');
+        const sectorsB = document.querySelectorAll('#box-bank-b .bank-sector');
+
+        let downloadTimer = null;
+        let isDownloaded = false;
+        let isSwapped = false;
+        let bootCounter = 3;
+
+        function updateDbStatusLog(text) {
+            dbStatusLogEl.innerText = text;
+        }
+
+        function resetDb() {
+            clearInterval(downloadTimer);
+            isDownloaded = false;
+            isSwapped = false;
+            bootCounter = 3;
+
+            dbActiveBankEl.innerText = "BANK_A";
+            dbActiveBankEl.className = "state-val val-blue";
+            dbAppAVerEl.innerText = "V1.0 (Stable)";
+            dbAppBVerEl.innerText = "EMPTY";
+            dbAppBVerEl.className = "state-val val-muted";
+            dbStableFlagEl.innerText = "TRUE";
+            dbStableFlagEl.className = "state-val val-green";
+            dbBootCounterEl.innerText = "--";
+            
+            dbCarTrackEl.style.display = "none";
+
+            document.getElementById('box-bank-a').classList.add('active-bank');
+            document.getElementById('box-bank-b').classList.remove('active-bank');
+            document.getElementById('bank-a-lbl').innerText = "(Active)";
+            document.getElementById('bank-b-lbl').innerText = "(Inactive)";
+
+            sectorsA.forEach(s => {
+                s.className = "bank-sector sector-v1";
+            });
+            sectorsB.forEach(s => {
+                s.className = "bank-sector";
+            });
+
+            btnDbDownload.disabled = false;
+            btnDbSwap.disabled = true;
+            btnDbCrash.disabled = true;
+            btnDbStable.disabled = true;
+            updateDbStatusLog("Hộp ECU đang chạy ổn định phiên bản V1.0 tại Bank A. Đợi phát động cập nhật OTA...");
+        }
+
+        btnDbDownload.addEventListener('click', () => {
+            btnDbDownload.disabled = true;
+            dbCarTrackEl.style.display = "block";
+            updateDbStatusLog("Hành trình lái xe bắt đầu. OTA Master kích hoạt tải ngầm. ECU tiếp tục chạy App V1.0 ở Bank A, đồng thời ghi dữ liệu vào Bank B (RWW)...");
+            
+            // Simulating erase sectors first
+            let currentSector = 0;
+            
+            downloadTimer = setInterval(() => {
+                if (currentSector < 10) {
+                    sectorsB[currentSector].className = "bank-sector sector-writing";
+                    updateDbStatusLog(`Đang ghi ngầm App V2.0 vào Bank B: Sector ${currentSector + 1}/10...`);
+                    
+                    setTimeout((sec) => {
+                        sectorsB[sec].className = "bank-sector sector-v2";
+                    }, 500, currentSector);
+
+                    currentSector++;
+                } else {
+                    clearInterval(downloadTimer);
+                    isDownloaded = true;
+                    dbCarTrackEl.style.display = "none";
+                    dbAppBVerEl.innerText = "V2.0 (Loaded)";
+                    dbAppBVerEl.className = "state-val val-orange";
+                    btnDbSwap.disabled = false;
+                    updateDbStatusLog("✓ Đã nạp hoàn tất App V2.0 vào Bank B và xác thực chữ ký số thành công. Đang chờ xe đỗ an toàn (Key-Off) để kích hoạt...");
+                }
+            }, 600);
+        });
+
+        btnDbSwap.addEventListener('click', () => {
+            btnDbSwap.disabled = true;
+            updateDbStatusLog("Tài xế tắt máy (Key-Off). Bắt đầu quá trình Swap Bank. Boot Manager ánh xạ lại địa chỉ (Address Remapping)...");
+            
+            setTimeout(() => {
+                document.getElementById('box-bank-a').classList.remove('active-bank');
+                document.getElementById('box-bank-b').classList.add('active-bank');
+                document.getElementById('bank-a-lbl').innerText = "(Inactive)";
+                document.getElementById('bank-b-lbl').innerText = "(Active)";
+                
+                dbActiveBankEl.innerText = "BANK_B";
+                dbActiveBankEl.className = "state-val val-green";
+                dbStableFlagEl.innerText = "FALSE";
+                dbStableFlagEl.className = "state-val val-orange";
+                dbBootCounterEl.innerText = "3";
+                
+                isSwapped = true;
+                btnDbCrash.disabled = false;
+                btnDbStable.disabled = false;
+                updateDbStatusLog("ECU khởi chạy ứng dụng mới ở Bank B (V2.0). Đang chạy thử nghiệm an toàn, cờ App Stable = FALSE, chờ ứng dụng xác thực độ ổn định...");
+            }, 1500);
+        });
+
+        btnDbStable.addEventListener('click', () => {
+            btnDbCrash.disabled = true;
+            btnDbStable.disabled = true;
+            dbStableFlagEl.innerText = "TRUE";
+            dbStableFlagEl.className = "state-val val-green";
+            dbBootCounterEl.innerText = "--";
+            dbAppBVerEl.innerText = "V2.0 (Stable)";
+            dbAppBVerEl.className = "state-val val-green";
+            
+            // Old App in Bank A is now inactive/expired
+            sectorsA.forEach(s => {
+                s.className = "bank-sector sector-erased";
+            });
+
+            updateDbStatusLog("✓ Cập nhật thành công! Phiên bản V2.0 chạy ổn định. Cờ App Stable set thành TRUE. Vùng nhớ cũ ở Bank A đã hết hạn.");
+        });
+
+        btnDbCrash.addEventListener('click', () => {
+            if (bootCounter > 1) {
+                bootCounter--;
+                dbBootCounterEl.innerText = bootCounter;
+                updateDbStatusLog(`Ứng dụng V2.0 bị crash (Exception)! Watchdog reset lại MCU. Số lần khởi động còn lại (Boot Counter): ${bootCounter}...`);
+            } else {
+                // Trigger Rollback!
+                bootCounter = 0;
+                dbBootCounterEl.innerText = "0";
+                btnDbCrash.disabled = true;
+                btnDbStable.disabled = true;
+                updateDbStatusLog("LỖI NGHÊM TRỌNG: App V2.0 crash liên tục 3 lần. Boot Manager phát hiện cờ Stable = FALSE và Counter = 0. Bắt đầu ROLLBACK!");
+                
+                setTimeout(() => {
+                    // Reverse Swap back to Bank A
+                    document.getElementById('box-bank-b').classList.remove('active-bank');
+                    document.getElementById('box-bank-a').classList.add('active-bank');
+                    document.getElementById('bank-b-lbl').innerText = "(Inactive/Failed)";
+                    document.getElementById('bank-a-lbl').innerText = "(Active)";
+                    
+                    dbActiveBankEl.innerText = "BANK_A";
+                    dbActiveBankEl.className = "state-val val-blue";
+                    dbStableFlagEl.innerText = "TRUE";
+                    dbStableFlagEl.className = "state-val val-green";
+                    dbBootCounterEl.innerText = "--";
+                    
+                    // Mark Bank B failed
+                    sectorsB.forEach(s => {
+                        s.className = "bank-sector sector-erased";
+                    });
+                    dbAppBVerEl.innerText = "FAILED / RESET";
+                    dbAppBVerEl.className = "state-val val-red";
+                    
+                    updateDbStatusLog("✓ Phục hồi Rollback thành công! ECU đã quay trở lại chạy an toàn ứng dụng cũ V1.0 tại Bank A. Hộp tiếp tục hoạt động bình thường.");
+                }, 2000);
+            }
+        });
+
+        btnDbReset.addEventListener('click', resetDb);
+
+
+        // ----------------------------------------------------
+        // SIMULATOR 3 LOGIC: CANTP TUNING
+        // ----------------------------------------------------
+        const sliderBs = document.getElementById('slider-bs');
+        const sliderSt = document.getElementById('slider-st');
+        const chkEcuLoad = document.getElementById('chk-ecu-load');
+        const bufBarFill = document.getElementById('buf-bar-fill');
+        
+        const tpBsVal = document.getElementById('tp-bs-val');
+        const tpStVal = document.getElementById('tp-st-val');
+        const bufStateLbl = document.getElementById('buf-state-lbl');
+        const tpAnimStage = document.getElementById('tp-anim-stage');
+        const tpLogSummary = document.getElementById('tp-log-summary');
+        
+        const tpStatFrames = document.getElementById('tp-stat-frames');
+        const tpStatTime = document.getElementById('tp-stat-time');
+        const tpStatStatus = document.getElementById('tp-stat-status');
+        
+        const btnTpStart = document.getElementById('btn-tp-start');
+        const btnTpStop = document.getElementById('btn-tp-stop');
+
+        let tpActive = false;
+        let tpFramesSent = 0;
+        const tpMaxFrames = 200;
+        let tpStartTime = 0;
+        let tpTimerInterval = null;
+        let tpTransmitInterval = null;
+        let bufferFillPercent = 0;
+
+        sliderBs.addEventListener('input', (e) => {
+            tpBsVal.innerText = e.target.value == 0 ? "0 (Continuous)" : e.target.value;
+        });
+
+        sliderSt.addEventListener('input', (e) => {
+            tpStVal.innerText = `${e.target.value} ms`;
+        });
+
+        function createPktBubble(type, label) {
+            const bubble = document.createElement('div');
+            bubble.className = `pkt-bubble pkt-${type.toLowerCase()}`;
+            bubble.innerText = label;
+            bubble.style.left = type === 'FC' ? '90%' : '10%';
+            
+            tpAnimStage.appendChild(bubble);
+            
+            const targetLeft = type === 'FC' ? 10 : 90;
+            let currentLeft = type === 'FC' ? 90 : 10;
+            const step = type === 'FC' ? -5 : 5;
+            
+            const moveAnim = setInterval(() => {
+                if (!tpActive) {
+                    clearInterval(moveAnim);
+                    bubble.remove();
+                    return;
+                }
+                
+                currentLeft += step;
+                bubble.style.left = `${currentLeft}%`;
+                
+                // Collision detection
+                if ((step > 0 && currentLeft >= targetLeft) || (step < 0 && currentLeft <= targetLeft)) {
+                    clearInterval(moveAnim);
+                    bubble.remove();
+                    
+                    if (type !== 'FC' && tpActive) {
+                        // ECU receives frame, buffer increases
+                        const loadMultiplier = chkEcuLoad.checked ? 16 : 4;
+                        const clearRate = chkEcuLoad.checked ? 3 : 8;
+                        
+                        bufferFillPercent = Math.min(100, bufferFillPercent + loadMultiplier);
+                        updateBufferUI();
+                        
+                        // Buffer clears over time
+                        setTimeout(() => {
+                            if (tpActive) {
+                                bufferFillPercent = Math.max(0, bufferFillPercent - clearRate);
+                                updateBufferUI();
+                            }
+                        }, 100);
+                        
+                        // Check for Overflow
+                        if (bufferFillPercent >= 100) {
+                            triggerTpOverflow();
+                        }
+                    }
+                }
+            }, 20);
+        }
+
+        function updateBufferUI() {
+            bufStateLbl.innerText = `${Math.round(bufferFillPercent)}%`;
+            bufBarFill.style.width = `${bufferFillPercent}%`;
+            
+            if (bufferFillPercent > 80) {
+                bufBarFill.className = "load-bar-fill high-load";
+            } else {
+                bufBarFill.className = "load-bar-fill";
+            }
+        }
+
+        function triggerTpOverflow() {
+            stopTpSim(false);
+            tpStatStatus.innerText = "OVERFLOW ERROR";
+            tpStatStatus.className = "state-val val-red";
+            tpLogSummary.innerText = "❌ LỖI: Tần suất gửi quá nhanh khiến bộ đệm Rx của ECU bị tràn (Buffer Overflow)! Quá trình Flashing bị hủy.";
+        }
+
+        function startTpSim() {
+            tpActive = true;
+            tpFramesSent = 0;
+            bufferFillPercent = 0;
+            updateBufferUI();
+            
+            btnTpStart.disabled = true;
+            btnTpStop.disabled = false;
+            
+            sliderBs.disabled = true;
+            sliderSt.disabled = true;
+            chkEcuLoad.disabled = true;
+            
+            tpStatStatus.innerText = "TRANSMITTING";
+            tpStatStatus.className = "state-val val-blue";
+            tpLogSummary.innerText = "Bắt đầu truyền file ứng dụng Multi-Frame qua CAN. Đang gửi các Consecutive Frames...";
+
+            tpStartTime = Date.now();
+            tpTimerInterval = setInterval(() => {
+                const elapsed = ((Date.now() - tpStartTime) / 1000).toFixed(2);
+                tpStatTime.innerText = `${elapsed}s`;
+            }, 50);
+
+            // Cấu hình truyền
+            const bs = parseInt(sliderBs.value);
+            const st = parseInt(sliderSt.value);
+            let framesInBlock = 0;
+
+            // First Frame
+            createPktBubble('FF', 'FF');
+            
+            setTimeout(() => {
+                if (!tpActive) return;
+                createPktBubble('FC', 'FC'); // Flow Control response
+                
+                setTimeout(runTransmissionLoop, 500);
+            }, 400);
+
+            function runTransmissionLoop() {
+                if (!tpActive) return;
+
+                tpTransmitInterval = setInterval(() => {
+                    if (tpFramesSent >= tpMaxFrames) {
+                        stopTpSim(true);
+                        return;
+                    }
+
+                    tpFramesSent++;
+                    tpStatFrames.innerText = `${tpFramesSent} / ${tpMaxFrames}`;
+                    createPktBubble('CF', 'CF');
+                    framesInBlock++;
+
+                    // Nếu có Flow Control
+                    if (bs > 0 && framesInBlock >= bs) {
+                        clearInterval(tpTransmitInterval);
+                        framesInBlock = 0;
+                        
+                        setTimeout(() => {
+                            if (!tpActive) return;
+                            createPktBubble('FC', 'FC'); // ECU sends Flow Control
+                            
+                            setTimeout(runTransmissionLoop, 300); // Resume sending
+                        }, 150);
+                    }
+                }, Math.max(5, st)); // minimum delay
+            }
+        }
+
+        function stopTpSim(success = true) {
+            tpActive = false;
+            clearInterval(tpTimerInterval);
+            clearInterval(tpTransmitInterval);
+            
+            btnTpStart.disabled = false;
+            btnTpStop.disabled = true;
+            
+            sliderBs.disabled = false;
+            sliderSt.disabled = false;
+            chkEcuLoad.disabled = false;
+            
+            if (success) {
+                tpStatStatus.innerText = "SUCCESS";
+                tpStatStatus.className = "state-val val-green";
+                const totalTime = tpStatTime.innerText;
+                tpLogSummary.innerText = `✓ Hoàn thành: Đã truyền xong toàn bộ 200 Frame dữ liệu qua CAN. Tổng thời gian nạp: ${totalTime}.`;
+            }
+        }
+
+        btnTpStart.addEventListener('click', startTpSim);
+        btnTpStop.addEventListener('click', () => stopTpSim(false));
+
+        // Initialize simulations
+        resetUds();
+        resetDb();
+        updateBufferUI();
+
+    </script>
+</body>
+</html>
